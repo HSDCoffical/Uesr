@@ -288,7 +288,7 @@ public class MainActivity extends Activity {
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
         // 顶部内边距已调整为 45（用户指定）
-        int topPadding = dpToPx(50);
+        int topPadding = dpToPx(40);
         topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
