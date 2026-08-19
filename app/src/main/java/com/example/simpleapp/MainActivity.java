@@ -287,7 +287,7 @@ public class MainActivity extends Activity {
 
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
-        inputLayout.setPadding(8, 4, 8, 4);
+        inputLayout.setPadding(8, 2, 8, 2);
 
         GradientDrawable glass = new GradientDrawable();
         glass.setCornerRadius(24);
