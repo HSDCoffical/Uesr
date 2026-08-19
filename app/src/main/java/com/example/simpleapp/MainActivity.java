@@ -55,12 +55,12 @@ public class MainActivity extends Activity {
     private ThemeHelper themeHelper;
     private FrameLayout mainLayout;
     private ImageView bgImage;
-    private int bgAlpha = 100; // 默认不透明
+    private int bgAlpha = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // 沉浸式
+        // 沉浸式状态栏
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
@@ -89,13 +89,22 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
-        // 内容层
+        // 内容层（半透明遮罩，让文字更清晰）
         FrameLayout contentLayer = new FrameLayout(this);
         contentLayer.setLayoutParams(new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
         ));
+        // 添加半透明遮罩，使文字清晰
+        View maskView = new View(this);
+        maskView.setLayoutParams(new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+        ));
+        maskView.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#66FFFFFF") : Color.parseColor("#66FFFFFF"));
+        contentLayer.addView(maskView);
 
+        // 构建聊天UI
         LinearLayout chatUI = buildChatUI();
         contentLayer.addView(chatUI);
 
@@ -202,27 +211,45 @@ public class MainActivity extends Activity {
         main.setOrientation(LinearLayout.VERTICAL);
         main.setPadding(16, 40, 16, 12); // 顶部留出状态栏
 
-        // 顶部栏（模型名称 + 按钮）
+        // 顶部栏（模型名称 + 文字按钮）
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
         topBar.setPadding(0, 8, 0, 12);
 
+        // 只显示模型名称，去掉"模型:"前缀
         tvStatus = new TextView(this);
-        tvStatus.setText(getStatusText());
+        String modelName = settingsHelper.getModel();
+        if (modelName == null || modelName.isEmpty()) {
+            tvStatus.setText("未配置");
+        } else {
+            tvStatus.setText(modelName);
+        }
         tvStatus.setTextSize(24);
         tvStatus.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
 
-        Button btnSettings = createIconButton("⚙️");
+        // 设置按钮（文字）
+        Button btnSettings = new Button(this);
+        btnSettings.setText("设置");
+        btnSettings.setTextSize(16);
+        btnSettings.setBackground(null);
+        btnSettings.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+        btnSettings.setPadding(8, 0, 8, 0);
         btnSettings.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
             startActivity(intent);
         });
         topBar.addView(btnSettings);
 
-        Button btnClear = createIconButton("🗑️");
+        // 清空按钮（文字）
+        Button btnClear = new Button(this);
+        btnClear.setText("清空");
+        btnClear.setTextSize(16);
+        btnClear.setBackground(null);
+        btnClear.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+        btnClear.setPadding(8, 0, 8, 0);
         btnClear.setOnClickListener(v -> {
             messages.clear();
             saveHistory();
@@ -248,16 +275,18 @@ public class MainActivity extends Activity {
         scrollView.addView(chatContainer);
         main.addView(scrollView);
 
-        // 输入区域（毛玻璃）
+        // 输入区域（液态玻璃效果）
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
-        inputLayout.setPadding(8, 10, 8, 10); // 减少垂直间距
+        inputLayout.setPadding(8, 8, 8, 8); // 缩小垂直间距
+
+        // 液态玻璃背景：半透明白色/深色，带渐变和边框
         GradientDrawable glass = new GradientDrawable();
         glass.setCornerRadius(24);
         if (themeHelper.isDarkMode()) {
-            glass.setColor(Color.parseColor("#88222222"));
+            glass.setColor(Color.parseColor("#55FFFFFF")); // 更透明
         } else {
-            glass.setColor(Color.parseColor("#CCFFFFFF"));
+            glass.setColor(Color.parseColor("#99FFFFFF"));
         }
         glass.setStroke(1, themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44AAAAAA"));
         inputLayout.setBackground(glass);
@@ -300,7 +329,6 @@ public class MainActivity extends Activity {
         if (bg != null) {
             bgImage.setImageBitmap(bg);
             bgImage.setBackgroundColor(Color.TRANSPARENT);
-            // 应用透明度
             int alpha = (int) (bgAlpha / 100.0 * 255);
             bgImage.setAlpha(alpha);
         } else {
@@ -320,21 +348,10 @@ public class MainActivity extends Activity {
         bgAlpha = themeHelper.getBgAlpha();
         applyBackground();
         if (tvStatus != null) {
-            tvStatus.setText(getStatusText());
+            String modelName = settingsHelper.getModel();
+            tvStatus.setText(modelName != null && !modelName.isEmpty() ? modelName : "未配置");
         }
         renderMessages();
-    }
-
-    private Button createIconButton(String text) {
-        Button btn = new Button(this);
-        btn.setText(text);
-        btn.setTextSize(16);
-        btn.setBackground(null);
-        btn.setPadding(4, 0, 4, 0);
-        btn.setMinimumWidth(0);
-        btn.setMinimumHeight(0);
-        btn.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        return btn;
     }
 
     private void renderMessages() {
@@ -384,7 +401,6 @@ public class MainActivity extends Activity {
 
         GradientDrawable drawable = new GradientDrawable();
         drawable.setCornerRadius(18);
-        // 毛玻璃效果：半透明白色/深色
         if (isUser) {
             drawable.setColor(Color.parseColor("#BB007AFF"));
             bubble.setTextColor(Color.WHITE);
@@ -434,13 +450,5 @@ public class MainActivity extends Activity {
         btnSend.setEnabled(!loading);
         etInput.setEnabled(!loading);
         progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
-    }
-
-    private String getStatusText() {
-        if (settingsHelper.hasSettings()) {
-            return "模型: " + settingsHelper.getModel();
-        } else {
-            return "⚠️ 请先进入设置配置 API";
-        }
     }
 }
