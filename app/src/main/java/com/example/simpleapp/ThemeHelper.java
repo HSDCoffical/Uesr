@@ -12,6 +12,7 @@ public class ThemeHelper {
     private static final String PREFS_NAME = "theme_prefs";
     private static final String KEY_DARK_MODE = "dark_mode";
     private static final String KEY_BACKGROUND = "background_base64";
+    private static final String KEY_BG_ALPHA = "bg_alpha";
 
     private SharedPreferences prefs;
 
@@ -19,7 +20,6 @@ public class ThemeHelper {
         prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
-    // 深色模式
     public boolean isDarkMode() {
         return prefs.getBoolean(KEY_DARK_MODE, false);
     }
@@ -28,7 +28,6 @@ public class ThemeHelper {
         prefs.edit().putBoolean(KEY_DARK_MODE, dark).apply();
     }
 
-    // 背景图（Base64存储）
     public void saveBackground(Bitmap bitmap) {
         if (bitmap == null) {
             prefs.edit().remove(KEY_BACKGROUND).apply();
@@ -53,5 +52,13 @@ public class ThemeHelper {
 
     public boolean hasBackground() {
         return prefs.contains(KEY_BACKGROUND);
+    }
+
+    public int getBgAlpha() {
+        return prefs.getInt(KEY_BG_ALPHA, 100);
+    }
+
+    public void setBgAlpha(int alpha) {
+        prefs.edit().putInt(KEY_BG_ALPHA, alpha).apply();
     }
 }
