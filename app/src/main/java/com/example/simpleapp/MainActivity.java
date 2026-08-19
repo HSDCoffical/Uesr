@@ -62,7 +62,7 @@ public class MainActivity extends Activity {
     private Button btnSend;
     private ProgressBar progressBar;
     private TextView tvModelName;
-    private TextView tvTitle;
+    private TextView tvSubtitle;
     private ScrollView scrollView;
     private Handler timeoutHandler;
     private Runnable timeoutRunnable;
@@ -132,10 +132,11 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
+        // 状态栏白色背景：高度扩展为状态栏高度的3倍
         View statusBarView = new View(this);
         statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                statusBarHeight * 2
+                statusBarHeight * 3
         ));
         statusBarView.setBackgroundColor(Color.WHITE);
         mainLayout.addView(statusBarView);
@@ -155,7 +156,7 @@ public class MainActivity extends Activity {
         setContentView(mainLayout);
 
         applyBackground();
-        updateTitleDisplay();
+        updateSubtitleDisplay();
         renderMessages();
         timeoutHandler = new Handler();
 
@@ -174,11 +175,11 @@ public class MainActivity extends Activity {
                     return;
                 }
 
-                // 生成标题：仅在第一条用户消息且标题为空时
+                // 生成副标题：仅在第一条用户消息且标题为空时
                 if (chatTitle == null && messages.isEmpty()) {
                     chatTitle = generateTitle(input);
                     saveTitle(chatTitle);
-                    updateTitleDisplay();
+                    updateSubtitleDisplay();
                 }
 
                 messages.add(new ChatMessage("user", input));
@@ -284,30 +285,30 @@ public class MainActivity extends Activity {
         main.setOrientation(LinearLayout.VERTICAL);
         main.setPadding(16, 0, 16, 22);
 
-        // 顶部栏（标题 + 模型名称）
+        // 顶部栏（模型名称 + 副标题 + 菜单按钮）
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.VERTICAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        int topPadding = statusBarHeight - dpToPx(8);
-        if (topPadding < 0) topPadding = 0;
+        int topPadding = statusBarHeight * 2; // 让内容在白色区域内
         topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
 
-        // 标题行（包含标题 + 菜单按钮）
+        // 标题行（模型名称 + 菜单按钮）
         LinearLayout titleRow = new LinearLayout(this);
         titleRow.setOrientation(LinearLayout.HORIZONTAL);
         titleRow.setGravity(Gravity.CENTER_VERTICAL);
 
-        tvTitle = new TextView(this);
-        tvTitle.setText("新对话");
-        tvTitle.setTextSize(20);
-        tvTitle.setTypeface(Typeface.DEFAULT_BOLD);
-        tvTitle.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        tvTitle.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
-        titleRow.addView(tvTitle);
+        tvModelName = new TextView(this);
+        String modelName = settingsHelper.getModel();
+        tvModelName.setText(modelName != null && !modelName.isEmpty() ? modelName : "未配置");
+        tvModelName.setTextSize(20);
+        tvModelName.setTypeface(Typeface.DEFAULT_BOLD);
+        tvModelName.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+        tvModelName.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
+        titleRow.addView(tvModelName);
 
         Button btnMenu = new Button(this);
         btnMenu.setText("☰");
@@ -321,18 +322,13 @@ public class MainActivity extends Activity {
 
         topBar.addView(titleRow);
 
-        // 模型名称（副标题）
-        tvModelName = new TextView(this);
-        String modelName = settingsHelper.getModel();
-        if (modelName == null || modelName.isEmpty()) {
-            tvModelName.setText("未配置");
-        } else {
-            tvModelName.setText(modelName);
-        }
-        tvModelName.setTextSize(12);
-        tvModelName.setTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
-        tvModelName.setPadding(0, 2, 0, 0);
-        topBar.addView(tvModelName);
+        // 副标题（对话标题）
+        tvSubtitle = new TextView(this);
+        tvSubtitle.setText(chatTitle != null && !chatTitle.isEmpty() ? chatTitle : "新对话");
+        tvSubtitle.setTextSize(14);
+        tvSubtitle.setTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
+        tvSubtitle.setPadding(0, 4, 0, 0);
+        topBar.addView(tvSubtitle);
 
         main.addView(topBar);
 
@@ -471,7 +467,7 @@ public class MainActivity extends Activity {
     });
     menuPanel.addView(itemExport);
 
-    // 分割线3（将新建对话与上面功能分开）
+    // 分割线3
     View divider3 = new View(this);
     divider3.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -609,11 +605,12 @@ private void closeMenu() {
         super.onResume();
         bgAlpha = themeHelper.getBgAlpha();
         applyBackground();
-        // 更新模型名称（可能设置中已切换）
+        // 更新模型名称
         if (tvModelName != null) {
             String modelName = settingsHelper.getModel();
             tvModelName.setText(modelName != null && !modelName.isEmpty() ? modelName : "未配置");
         }
+        updateSubtitleDisplay();
         renderMessages();
     }
 
@@ -852,7 +849,7 @@ private void closeMenu() {
         });
     }
 
-    // ----- 标题相关 -----
+    // ----- 标题/副标题相关 -----
     private String generateTitle(String text) {
         if (text.length() <= 20) {
             return text;
@@ -870,12 +867,12 @@ private void closeMenu() {
         return prefs.getString(KEY_TITLE, null);
     }
 
-    private void updateTitleDisplay() {
-        if (tvTitle != null) {
+    private void updateSubtitleDisplay() {
+        if (tvSubtitle != null) {
             if (chatTitle != null && !chatTitle.isEmpty()) {
-                tvTitle.setText(chatTitle);
+                tvSubtitle.setText(chatTitle);
             } else {
-                tvTitle.setText("新对话");
+                tvSubtitle.setText("新对话");
             }
         }
     }
@@ -886,12 +883,12 @@ private void closeMenu() {
         chatTitle = null;
         saveHistory();
         saveTitle(null);
-        updateTitleDisplay();
+        updateSubtitleDisplay();
         renderMessages();
         Toast.makeText(this, "已创建新对话", Toast.LENGTH_SHORT).show();
     }
 
-    // ----- 导出对话（使用系统文件选择器） -----
+    // ----- 导出对话 -----
     private String exportContent;
 
     private void exportChat() {
