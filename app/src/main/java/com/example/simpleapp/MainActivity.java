@@ -143,7 +143,7 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
-        // 状态栏白色背景：高度为状态栏高度的2倍
+        // 状态栏白色背景
         View statusBarView = new View(this);
         statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -186,7 +186,6 @@ public class MainActivity extends Activity {
                 }
 
                 messages.add(new ChatMessage("user", input));
-                // 自动保存对话
                 saveAllConversations();
                 renderMessages();
 
@@ -292,7 +291,8 @@ public class MainActivity extends Activity {
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        int topPadding = statusBarHeight * 2 - dpToPx(12);
+        // 修复：让内容在白色区域内
+        int topPadding = statusBarHeight * 2 - dpToPx(8);
         topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -564,7 +564,6 @@ private void toggleMenu() {
 
 private void openMenu() {
     if (menuContainer == null) return;
-    // 刷新历史列表
     refreshHistory();
     menuContainer.setVisibility(View.VISIBLE);
     AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
@@ -611,7 +610,6 @@ private void closeMenu() {
     isMenuOpen = false;
 }
 
-// 刷新对话历史列表
 private void refreshHistory() {
     if (historyContainer == null) return;
     historyContainer.removeAllViews();
@@ -631,7 +629,6 @@ private void refreshHistory() {
         Conversation conv = conversationHistory.get(i);
         String title = conv.title != null && !conv.title.isEmpty() ? conv.title : "无标题";
         LinearLayout item = createMenuItem(title);
-        // 高亮当前对话
         if (currentIndex == i) {
             item.setBackgroundColor(Color.parseColor("#33007AFF"));
         }
@@ -996,74 +993,4 @@ private void newConversation() {
     Toast.makeText(this, "已创建新对话", Toast.LENGTH_SHORT).show();
 }
 
-// ----- 导出对话 -----
-private String exportContent;
-
-private void exportChat() {
-    if (messages.isEmpty()) {
-        Toast.makeText(this, "没有可导出的对话", Toast.LENGTH_SHORT).show();
-        return;
-    }
-
-    StringBuilder sb = new StringBuilder();
-    sb.append("AI Chat 对话导出\n");
-    sb.append("导出时间: ").append(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date())).append("\n\n");
-    sb.append("====================================\n\n");
-
-    for (ChatMessage msg : messages) {
-        String role = msg.getRole().equals("user") ? "我" : "AI";
-        String time = formatTime(msg.getTimestamp());
-        sb.append("[").append(role).append("] ").append(time).append("\n");
-        sb.append(msg.getContent()).append("\n\n");
-    }
-
-    sb.append("====================================\n");
-    sb.append("—— 导出结束 ——");
-
-    exportContent = sb.toString();
-
-    Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-    intent.addCategory(Intent.CATEGORY_OPENABLE);
-    intent.setType("text/plain");
-    intent.putExtra(Intent.EXTRA_TITLE, "AI_Chat_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt");
-    startActivityForResult(intent, REQUEST_CODE_SAVE_FILE);
-}
-
-@Override
-protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    super.onActivityResult(requestCode, resultCode, data);
-    if (requestCode == REQUEST_CODE_SAVE_FILE && resultCode == RESULT_OK && data != null) {
-        Uri uri = data.getData();
-        if (uri != null) {
-            try {
-                android.content.ContentResolver resolver = getContentResolver();
-                java.io.OutputStream os = resolver.openOutputStream(uri);
-                if (os != null) {
-                    os.write(exportContent.getBytes());
-                    os.close();
-                    Toast.makeText(this, "导出成功！", Toast.LENGTH_LONG).show();
-                } else {
-                    Toast.makeText(this, "导出失败：无法写入文件", Toast.LENGTH_SHORT).show();
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "导出失败", e);
-                Toast.makeText(this, "导出失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
-}
-
-@Override
-protected void onDestroy() {
-    super.onDestroy();
-    if (timeoutRunnable != null) {
-        timeoutHandler.removeCallbacks(timeoutRunnable);
-    }
-}
-
-private void setLoading(boolean loading) {
-    btnSend.setEnabled(!loading);
-    etInput.setEnabled(!loading);
-    progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
-}
-}
+// ----- 导出
