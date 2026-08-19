@@ -1066,3 +1066,4 @@ private void setLoading(boolean loading) {
     etInput.setEnabled(!loading);
     progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
 }
+}
