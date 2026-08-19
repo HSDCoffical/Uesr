@@ -52,7 +52,7 @@ public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private static final String PREFS_NAME = "chat_prefs";
     private static final String KEY_HISTORY = "chat_history";
-    private static final int PERMISSION_REQUEST_WRITE = 1003;
+    private static final int REQUEST_CODE_SAVE_FILE = 1004;
 
     private SettingsHelper settingsHelper;
     private ApiHelper apiHelper;
@@ -438,7 +438,7 @@ public class MainActivity extends Activity {
     LinearLayout itemExport = createMenuItem("导出对话");
     itemExport.setOnClickListener(v -> {
         closeMenu();
-        checkAndExport();
+        exportChat();
     });
     menuPanel.addView(itemExport);
 
@@ -805,64 +805,43 @@ private void closeMenu() {
         });
     }
 
-    // ----- 导出对话功能 + 权限处理 -----
-    private void checkAndExport() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int permission = checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            if (permission != PackageManager.PERMISSION_GRANTED) {
-                if (shouldShowRequestPermissionRationale(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                    new AlertDialog.Builder(this)
-                            .setTitle("需要存储权限")
-                            .setMessage("导出对话需要存储权限，以便将文件保存到您的设备。")
-                            .setPositiveButton("确定", (dialog, which) -> {
-                                requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                                        PERMISSION_REQUEST_WRITE);
-                            })
-                            .setNegativeButton("取消", null)
-                            .show();
-                } else {
-                    requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                            PERMISSION_REQUEST_WRITE);
-                }
-                return;
-            }
-        }
-        exportChat();
-    }
-
+    // ----- 导出对话（系统文件选择器，无需权限） -----
     private void exportChat() {
         if (messages.isEmpty()) {
             Toast.makeText(this, "没有可导出的对话", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        // 生成对话内容
+        StringBuilder sb = new StringBuilder();
+        sb.append("AI Chat 对话导出\n");
+        sb.append("导出时间: ").append(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date())).append("\n\n");
+        sb.append("====================================\n\n");
+
+        for (ChatMessage msg : messages) {
+            String role = msg.getRole().equals("user") ? "我" : "AI";
+            String time = formatTime(msg.getTimestamp());
+            sb.append("[").append(role).append("] ").append(time).append("\n");
+            sb.append(msg.getContent()).append("\n\n");
+        }
+
+        sb.append("====================================\n");
+        sb.append("—— 导出结束 ——");
+
+        // 创建临时文件
         try {
-            StringBuilder sb = new StringBuilder();
-            sb.append("AI Chat 对话导出\n");
-            sb.append("导出时间: ").append(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date())).append("\n\n");
-            sb.append("====================================\n\n");
-
-            for (ChatMessage msg : messages) {
-                String role = msg.getRole().equals("user") ? "我" : "AI";
-                String time = formatTime(msg.getTimestamp());
-                sb.append("[").append(role).append("] ").append(time).append("\n");
-                sb.append(msg.getContent()).append("\n\n");
-            }
-
-            sb.append("====================================\n");
-            sb.append("—— 导出结束 ——");
-
-            File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-            String fileName = "AI_Chat_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt";
-            File file = new File(dir, fileName);
-            FileWriter writer = new FileWriter(file);
+            File tempFile = new File(getCacheDir(), "temp_export.txt");
+            FileWriter writer = new FileWriter(tempFile);
             writer.write(sb.toString());
             writer.close();
 
-            Toast.makeText(this, "导出成功！\n" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+            // 使用系统文件选择器（ACTION_CREATE_DOCUMENT）
+            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+            intent.addCategory(Intent.CATEGORY_OPENABLE);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_TITLE, "AI_Chat_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt");
+            intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(tempFile));
+            startActivityForResult(intent, REQUEST_CODE_SAVE_FILE);
         } catch (Exception e) {
             Log.e(TAG, "导出失败", e);
             Toast.makeText(this, "导出失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
@@ -870,27 +849,15 @@ private void closeMenu() {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_REQUEST_WRITE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                exportChat();
-            } else {
-                if (!shouldShowRequestPermissionRationale(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                    new AlertDialog.Builder(this)
-                            .setTitle("权限被拒绝")
-                            .setMessage("您已永久拒绝存储权限，请在系统设置中手动开启。")
-                            .setPositiveButton("去设置", (dialog, which) -> {
-                                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-                                intent.setData(Uri.parse("package:" + getPackageName()));
-                                startActivity(intent);
-                            })
-                            .setNegativeButton("取消", null)
-                            .show();
-                } else {
-                    Toast.makeText(this, "需要存储权限才能导出对话", Toast.LENGTH_SHORT).show();
-                }
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_SAVE_FILE && resultCode == RESULT_OK) {
+            // 删除临时文件
+            File tempFile = new File(getCacheDir(), "temp_export.txt");
+            if (tempFile.exists()) {
+                tempFile.delete();
             }
+            Toast.makeText(this, "导出成功！", Toast.LENGTH_SHORT).show();
         }
     }
 
