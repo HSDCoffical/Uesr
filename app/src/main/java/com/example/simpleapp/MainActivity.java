@@ -324,8 +324,8 @@ public class MainActivity extends Activity {
         btnSend.setTextColor(Color.WHITE);
         // 仅缩小发送按钮（宽68dp，高32dp）
         LinearLayout.LayoutParams sendParams = new LinearLayout.LayoutParams(
-                dpToPx(68),
-                dpToPx(32)
+                dpToPx(54),
+                dpToPx(26)
         );
         btnSend.setLayoutParams(sendParams);
         btnSend.setPadding(0, 0, 0, 0);
