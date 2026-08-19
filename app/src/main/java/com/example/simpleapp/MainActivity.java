@@ -208,9 +208,8 @@ public class MainActivity extends Activity {
     private LinearLayout buildChatUI() {
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
-        main.setPadding(16, 0, 16, 12); // 顶部填充为0，紧贴状态栏
+        main.setPadding(16, 0, 16, 12);
 
-        // 顶部栏（毛玻璃效果）
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
@@ -235,7 +234,7 @@ public class MainActivity extends Activity {
         } else {
             tvStatus.setText(modelName);
         }
-        tvStatus.setTextSize(18); // 字体缩小
+        tvStatus.setTextSize(18);
         tvStatus.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
@@ -265,10 +264,9 @@ public class MainActivity extends Activity {
         scrollView.addView(chatContainer);
         main.addView(scrollView);
 
-        // 输入区域（液态玻璃）
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
-        inputLayout.setPadding(8, 4, 8, 4); // 垂直间距从8减少到4
+        inputLayout.setPadding(8, 4, 8, 4);
 
         GradientDrawable glass = new GradientDrawable();
         glass.setCornerRadius(24);
@@ -311,122 +309,118 @@ public class MainActivity extends Activity {
         main.addView(progressBar);
 
         return main;
-    }
+    }private void setupMenu(FrameLayout parent) {
+    menuContainer = new FrameLayout(this);
+    menuContainer.setLayoutParams(new FrameLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT
+    ));
+    menuContainer.setBackgroundColor(Color.parseColor("#66000000"));
+    menuContainer.setVisibility(View.GONE);
+    menuContainer.setOnClickListener(v -> closeMenu());
 
-    private void setupMenu(FrameLayout parent) {
-        menuContainer = new FrameLayout(this);
-        menuContainer.setLayoutParams(new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-        ));
-        menuContainer.setBackgroundColor(Color.parseColor("#66000000"));
-        menuContainer.setVisibility(View.GONE);
-        menuContainer.setOnClickListener(v -> closeMenu());
+    menuPanel = new LinearLayout(this);
+    menuPanel.setOrientation(LinearLayout.VERTICAL);
+    menuPanel.setGravity(Gravity.TOP | Gravity.END);
+    int panelWidth = (int) (getResources().getDisplayMetrics().widthPixels * 0.6);
+    FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(
+            panelWidth,
+            ViewGroup.LayoutParams.MATCH_PARENT
+    );
+    panelParams.gravity = Gravity.END;
+    menuPanel.setLayoutParams(panelParams);
+    menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
+    menuPanel.setPadding(20, 40, 20, 20);
 
-        menuPanel = new LinearLayout(this);
-        menuPanel.setOrientation(LinearLayout.VERTICAL);
-        menuPanel.setGravity(Gravity.TOP | Gravity.END);
-        int panelWidth = (int) (getResources().getDisplayMetrics().widthPixels * 0.6);
-        FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(
-                panelWidth,
-                ViewGroup.LayoutParams.MATCH_PARENT
-        );
-        panelParams.gravity = Gravity.END;
-        menuPanel.setLayoutParams(panelParams);
-        menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
-        menuPanel.setPadding(20, 40, 20, 20);
+    Button menuSettings = new Button(this);
+    menuSettings.setText("设置");
+    menuSettings.setTextSize(18);
+    menuSettings.setBackground(null);
+    menuSettings.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+    menuSettings.setGravity(Gravity.CENTER);
+    menuSettings.setPadding(16, 16, 16, 16);
+    menuSettings.setOnClickListener(v -> {
+        closeMenu();
+        Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+        startActivity(intent);
+    });
+    menuPanel.addView(menuSettings);
 
-        Button menuSettings = new Button(this);
-        menuSettings.setText("设置");
-        menuSettings.setTextSize(18);
-        menuSettings.setBackground(null);
-        menuSettings.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        menuSettings.setGravity(Gravity.CENTER);
-        menuSettings.setPadding(16, 16, 16, 16);
-        menuSettings.setOnClickListener(v -> {
-            closeMenu();
-            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-            startActivity(intent);
-        });
-        menuPanel.addView(menuSettings);
+    Button menuClear = new Button(this);
+    menuClear.setText("清空");
+    menuClear.setTextSize(18);
+    menuClear.setBackground(null);
+    menuClear.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+    menuClear.setGravity(Gravity.CENTER);
+    menuClear.setPadding(16, 16, 16, 16);
+    menuClear.setOnClickListener(v -> {
+        closeMenu();
+        messages.clear();
+        saveHistory();
+        renderMessages();
+        Toast.makeText(MainActivity.this, "对话已清空", Toast.LENGTH_SHORT).show();
+    });
+    menuPanel.addView(menuClear);
 
-        Button menuClear = new Button(this);
-        menuClear.setText("清空");
-        menuClear.setTextSize(18);
-        menuClear.setBackground(null);
-        menuClear.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        menuClear.setGravity(Gravity.CENTER);
-        menuClear.setPadding(16, 16, 16, 16);
-        menuClear.setOnClickListener(v -> {
-            closeMenu();
-            messages.clear();
-            saveHistory();
-            renderMessages();
-            Toast.makeText(MainActivity.this, "对话已清空", Toast.LENGTH_SHORT).show();
-        });
-        menuPanel.addView(menuClear);
+    View closeArea = new View(this);
+    closeArea.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            0,
+            1.0f
+    ));
+    closeArea.setOnClickListener(v -> closeMenu());
+    menuPanel.addView(closeArea);
 
-        View closeArea = new View(this);
-        closeArea.setLayoutParams(new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                0,
-                1.0f
-        ));
-        closeArea.setOnClickListener(v -> closeMenu());
-        menuPanel.addView(closeArea);
+    menuContainer.addView(menuPanel);
+    parent.addView(menuContainer);
+}
 
-        menuContainer.addView(menuPanel);
-        parent.addView(menuContainer);
-    }
-
-    private void toggleMenu() {
-        if (isMenuOpen) {
-            closeMenu();
-        } else {
-            openMenu();
-        }
-    }
-
-    private void openMenu() {
-        if (menuContainer == null) return;
-        menuContainer.setVisibility(View.VISIBLE);
-        TranslateAnimation slideIn = new TranslateAnimation(
-                Animation.RELATIVE_TO_SELF, 1.0f,
-                Animation.RELATIVE_TO_SELF, 0.0f,
-                Animation.RELATIVE_TO_SELF, 0.0f,
-                Animation.RELATIVE_TO_SELF, 0.0f
-        );
-        slideIn.setDuration(300);
-        slideIn.setInterpolator(new AccelerateDecelerateInterpolator());
-        menuPanel.startAnimation(slideIn);
-        isMenuOpen = true;
-    }
-
-    private void closeMenu() {
-        if (menuContainer == null) return;
-        TranslateAnimation slideOut = new TranslateAnimation(
-                Animation.RELATIVE_TO_SELF, 0.0f,
-                Animation.RELATIVE_TO_SELF, 1.0f,
-                Animation.RELATIVE_TO_SELF, 0.0f,
-                Animation.RELATIVE_TO_SELF, 0.0f
-        );
-        slideOut.setDuration(300);
-        slideOut.setInterpolator(new AccelerateDecelerateInterpolator());
-        slideOut.setAnimationListener(new Animation.AnimationListener() {
-            @Override
-            public void onAnimationStart(Animation animation) {}
-            @Override
-            public void onAnimationEnd(Animation animation) {
-                menuContainer.setVisibility(View.GONE);
-            }
-            @Override
-            public void onAnimationRepeat(Animation animation) {}
-        });
-        menuPanel.startAnimation(slideOut);
-        isMenuOpen = false;
+private void toggleMenu() {
+    if (isMenuOpen) {
+        closeMenu();
+    } else {
+        openMenu();
     }
 }
-    private void applyBackground() {
+
+private void openMenu() {
+    if (menuContainer == null) return;
+    menuContainer.setVisibility(View.VISIBLE);
+    TranslateAnimation slideIn = new TranslateAnimation(
+            Animation.RELATIVE_TO_SELF, 1.0f,
+            Animation.RELATIVE_TO_SELF, 0.0f,
+            Animation.RELATIVE_TO_SELF, 0.0f,
+            Animation.RELATIVE_TO_SELF, 0.0f
+    );
+    slideIn.setDuration(300);
+    slideIn.setInterpolator(new AccelerateDecelerateInterpolator());
+    menuPanel.startAnimation(slideIn);
+    isMenuOpen = true;
+}
+
+private void closeMenu() {
+    if (menuContainer == null) return;
+    TranslateAnimation slideOut = new TranslateAnimation(
+            Animation.RELATIVE_TO_SELF, 0.0f,
+            Animation.RELATIVE_TO_SELF, 1.0f,
+            Animation.RELATIVE_TO_SELF, 0.0f,
+            Animation.RELATIVE_TO_SELF, 0.0f
+    );
+    slideOut.setDuration(300);
+    slideOut.setInterpolator(new AccelerateDecelerateInterpolator());
+    slideOut.setAnimationListener(new Animation.AnimationListener() {
+        @Override
+        public void onAnimationStart(Animation animation) {}
+        @Override
+        public void onAnimationEnd(Animation animation) {
+            menuContainer.setVisibility(View.GONE);
+        }
+        @Override
+        public void onAnimationRepeat(Animation animation) {}
+    });
+    menuPanel.startAnimation(slideOut);
+    isMenuOpen = false;
+}    private void applyBackground() {
         Bitmap bg = themeHelper.getBackground();
         if (bg != null) {
             bgImage.setImageBitmap(bg);
