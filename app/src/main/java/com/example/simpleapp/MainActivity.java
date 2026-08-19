@@ -228,7 +228,7 @@ public class MainActivity extends Activity {
     private LinearLayout buildChatUI() {
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
-        main.setPadding(16, 0, 16, 20);
+        main.setPadding(16, 0, 16, 22);
 
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
