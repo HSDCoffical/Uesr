@@ -196,7 +196,7 @@ private LinearLayout createConfigItem(ApiConfig config) {
     item.setGravity(Gravity.CENTER_VERTICAL);
     // 卡片：四方R角（四个角圆角20dp）
     GradientDrawable card = new GradientDrawable();
-    card.setCornerRadius(dpToPx(20)); // 四方R角 20dp
+    card.setCornerRadius(dpToPx(0)); // 四方R角 20dp
     card.setColor(darkMode ? Color.parseColor("#424242") : Color.WHITE);
     card.setStroke(1, darkMode ? Color.parseColor("#666666") : Color.parseColor("#DDDDDD"));
     item.setBackground(card);
