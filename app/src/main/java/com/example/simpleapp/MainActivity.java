@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.provider.Settings;
+import android.speech.RecognizerIntent;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -54,6 +55,8 @@ public class MainActivity extends Activity {
     private static final String KEY_CONVERSATIONS = "conversations";
     private static final String KEY_CURRENT_INDEX = "current_index";
     private static final int REQUEST_CODE_SAVE_FILE = 1004;
+    private static final int REQUEST_RECORD_AUDIO = 1006;
+    private static final int REQUEST_VOICE = 1007;
 
     public static class Conversation {
         public String title;
@@ -92,6 +95,9 @@ public class MainActivity extends Activity {
     private boolean isMenuOpen = false;
 
     private int statusBarHeight = 0;
+
+    // 语音输入按钮
+    private Button btnVoice;
 
     private int getStatusBarHeight() {
         int result = 0;
@@ -287,8 +293,7 @@ public class MainActivity extends Activity {
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        // 顶部内边距已调整为 45（用户指定）
-        int topPadding = dpToPx(30);
+        int topPadding = dpToPx(45);
         topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -357,6 +362,14 @@ public class MainActivity extends Activity {
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
         etInput.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         inputLayout.addView(etInput);
+
+        // 麦克风按钮
+        btnVoice = new Button(this);
+        btnVoice.setText("🎤");
+        btnVoice.setTextSize(16);
+        btnVoice.setBackground(null);
+        btnVoice.setOnClickListener(v -> startVoiceInput());
+        inputLayout.addView(btnVoice);
 
         btnSend = new Button(this);
         btnSend.setText("发送");
@@ -618,12 +631,10 @@ private void refreshHistory() {
         if (currentIndex == i) {
             item.setBackgroundColor(Color.parseColor("#33007AFF"));
         }
-        // 点击：切换到该对话
         item.setOnClickListener(v -> {
             closeMenu();
             loadConversation(index);
         });
-        // 长按：弹出删除/导出选项
         item.setOnLongClickListener(v -> {
             showHistoryItemMenu(index);
             return true;
@@ -632,7 +643,6 @@ private void refreshHistory() {
     }
 }
 
-// ----- 对话历史条目长按菜单 -----
 private void showHistoryItemMenu(final int index) {
     if (index < 0 || index >= conversationHistory.size()) return;
     final Conversation conv = conversationHistory.get(index);
@@ -643,17 +653,14 @@ private void showHistoryItemMenu(final int index) {
     builder.setTitle(title);
     builder.setItems(options, (dialog, which) -> {
         if (which == 0) {
-            // 导出
             exportSingleConversation(index);
         } else if (which == 1) {
-            // 删除
             deleteConversation(index);
         }
     });
     builder.show();
 }
 
-// ----- 导出单个对话 -----
 private void exportSingleConversation(int index) {
     if (index < 0 || index >= conversationHistory.size()) return;
     Conversation conv = conversationHistory.get(index);
@@ -697,7 +704,6 @@ private void exportSingleConversation(int index) {
     }
 }
 
-// ----- 删除单个对话 -----
 private void deleteConversation(int index) {
     if (index < 0 || index >= conversationHistory.size()) return;
     String title = conversationHistory.get(index).title;
@@ -706,7 +712,6 @@ private void deleteConversation(int index) {
             .setMessage("确定要删除 \"" + title + "\" 吗？")
             .setPositiveButton("删除", (dialog, which) -> {
                 conversationHistory.remove(index);
-                // 如果删除的是当前对话
                 if (currentIndex == index) {
                     currentIndex = -1;
                     messages.clear();
@@ -715,7 +720,6 @@ private void deleteConversation(int index) {
                     currentIndex--;
                 }
                 saveAllConversations();
-                // 刷新菜单
                 refreshHistory();
                 Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
             })
@@ -1075,6 +1079,80 @@ private void deleteConversation(int index) {
         Toast.makeText(this, "已创建新对话", Toast.LENGTH_SHORT).show();
     }
 
+    // ----- 语音输入（Android 原生语音识别）-----
+    private void startVoiceInput() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO);
+                return;
+            }
+        }
+        PackageManager pm = getPackageManager();
+        Intent checkIntent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        if (pm.queryIntentActivities(checkIntent, 0).isEmpty()) {
+            Toast.makeText(this, "您的设备不支持语音识别", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault());
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "请说话...");
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+        try {
+            startActivityForResult(intent, REQUEST_VOICE);
+        } catch (Exception e) {
+            Toast.makeText(this, "无法启动语音识别：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_RECORD_AUDIO) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startVoiceInput();
+            } else {
+                Toast.makeText(this, "需要录音权限才能使用语音输入", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        // 语音识别结果
+        if (requestCode == REQUEST_VOICE && resultCode == RESULT_OK && data != null) {
+            java.util.ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            if (results != null && !results.isEmpty()) {
+                String spokenText = results.get(0);
+                etInput.setText(spokenText);
+                etInput.setSelection(spokenText.length());
+                Toast.makeText(this, "语音识别完成", Toast.LENGTH_SHORT).show();
+            }
+            return;
+        }
+        // 导出功能（原有）
+        if (requestCode == REQUEST_CODE_SAVE_FILE && resultCode == RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            if (uri != null) {
+                try {
+                    android.content.ContentResolver resolver = getContentResolver();
+                    java.io.OutputStream os = resolver.openOutputStream(uri);
+                    if (os != null) {
+                        os.write(exportContent.getBytes());
+                        os.close();
+                        Toast.makeText(this, "导出成功！", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, "导出失败：无法写入文件", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "导出失败", e);
+                    Toast.makeText(this, "导出失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
+
     // ----- 导出当前对话（菜单项）-----
     private String exportContent;
 
@@ -1106,30 +1184,6 @@ private void deleteConversation(int index) {
         intent.setType("text/plain");
         intent.putExtra(Intent.EXTRA_TITLE, "AI_Chat_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt");
         startActivityForResult(intent, REQUEST_CODE_SAVE_FILE);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE_SAVE_FILE && resultCode == RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null) {
-                try {
-                    android.content.ContentResolver resolver = getContentResolver();
-                    java.io.OutputStream os = resolver.openOutputStream(uri);
-                    if (os != null) {
-                        os.write(exportContent.getBytes());
-                        os.close();
-                        Toast.makeText(this, "导出成功！", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(this, "导出失败：无法写入文件", Toast.LENGTH_SHORT).show();
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "导出失败", e);
-                    Toast.makeText(this, "导出失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
     }
 
     @Override
