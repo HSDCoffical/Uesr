@@ -260,7 +260,6 @@ public class MainActivity extends Activity {
         } else {
             tvStatus.setText(modelName);
         }
-        // 字体加大到 24sp 并加粗
         tvStatus.setTextSize(24);
         tvStatus.setTypeface(Typeface.DEFAULT_BOLD);
         tvStatus.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
@@ -269,10 +268,12 @@ public class MainActivity extends Activity {
 
         Button btnMenu = new Button(this);
         btnMenu.setText("☰");
-        btnMenu.setTextSize(20);
+        btnMenu.setTextSize(24); // 放大
+        btnMenu.setTypeface(Typeface.DEFAULT_BOLD); // 加粗
         btnMenu.setBackground(null);
         btnMenu.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnMenu.setPadding(8, 0, 8, 0);
+        // 左边距增加，让按钮向右移动
+        btnMenu.setPadding(24, 0, 8, 0);
         btnMenu.setOnClickListener(v -> toggleMenu());
         topBar.addView(btnMenu);
 
@@ -319,14 +320,16 @@ public class MainActivity extends Activity {
         btnSend.setText("发送");
         btnSend.setBackgroundColor(Color.parseColor("#007AFF"));
         btnSend.setTextColor(Color.WHITE);
+        // 发送按钮整体缩小（宽68dp，高32dp）
         LinearLayout.LayoutParams sendParams = new LinearLayout.LayoutParams(
-                dpToPx(80),
-                dpToPx(40)
+                dpToPx(68),
+                dpToPx(32)
         );
         btnSend.setLayoutParams(sendParams);
         btnSend.setPadding(0, 0, 0, 0);
+        btnSend.setTextSize(12); // 文字也缩小一点
         GradientDrawable btnShape = new GradientDrawable();
-        btnShape.setCornerRadius(20);
+        btnShape.setCornerRadius(16);
         btnShape.setColor(Color.parseColor("#007AFF"));
         btnSend.setBackground(btnShape);
         inputLayout.addView(btnSend);
@@ -363,7 +366,6 @@ public class MainActivity extends Activity {
     panelParams.gravity = Gravity.END;
     menuPanel.setLayoutParams(panelParams);
     menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
-    // 顶部内边距从 40 改为 80，让菜单项下移
     menuPanel.setPadding(20, 80, 20, 20);
 
     Button menuSettings = new Button(this);
