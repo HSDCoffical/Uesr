@@ -234,7 +234,7 @@ public class MainActivity extends Activity {
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
         // 状态栏高度 + 8dp 下移，32 约等于状态栏高度（24dp）+ 8dp 间距
-        topBar.setPadding(16, 32, 16, 16);
+        topBar.setPadding(16, 64, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
