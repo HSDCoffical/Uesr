@@ -24,10 +24,6 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
@@ -64,7 +60,6 @@ public class SettingsActivity extends Activity {
         mainLayout.setPadding(16, 16, 16, 16);
         mainLayout.setBackgroundColor(darkMode ? Color.parseColor("#303030") : Color.parseColor("#F5F5F5"));
 
-        // 标题
         TextView title = new TextView(this);
         title.setText("设置");
         title.setTextSize(24);
@@ -72,7 +67,7 @@ public class SettingsActivity extends Activity {
         title.setPadding(0, 0, 0, 24);
         mainLayout.addView(title);
 
-        // Tab 栏（Material 风格）
+        // Tab 栏
         LinearLayout tabBar = new LinearLayout(this);
         tabBar.setOrientation(LinearLayout.HORIZONTAL);
         tabBar.setWeightSum(3);
@@ -87,7 +82,6 @@ public class SettingsActivity extends Activity {
         tabBar.addView(tabAbout);
         mainLayout.addView(tabBar);
 
-        // 内容容器（滚动）
         ScrollView scrollView = new ScrollView(this);
         scrollView.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -102,10 +96,8 @@ public class SettingsActivity extends Activity {
 
         setContentView(mainLayout);
 
-        // 默认显示管理AI
         showAiManagement();
 
-        // Tab 点击切换
         tabAi.setOnClickListener(v -> { resetTabColors(); highlightTab(tabAi); showAiManagement(); });
         tabTheme.setOnClickListener(v -> { resetTabColors(); highlightTab(tabTheme); showThemeManagement(); });
         tabAbout.setOnClickListener(v -> { resetTabColors(); highlightTab(tabAbout); showAbout(); });
@@ -158,7 +150,6 @@ public class SettingsActivity extends Activity {
             contentContainer.addView(item);
         }
 
-        // 悬浮添加按钮
         Button fab = new Button(this);
         fab.setText("+");
         fab.setTextSize(32);
@@ -362,7 +353,6 @@ public class SettingsActivity extends Activity {
                 .putString("api_configs", json)
                 .putString("current_config_id", currentConfigId)
                 .apply();
-        // 同步到 SettingsHelper
         updateSettingsHelper();
     }
 
@@ -390,7 +380,7 @@ public class SettingsActivity extends Activity {
     private void showThemeManagement() {
         contentContainer.removeAllViews();
 
-        // 深色模式切换
+        // 深色模式
         LinearLayout themeRow = new LinearLayout(this);
         themeRow.setOrientation(LinearLayout.HORIZONTAL);
         themeRow.setGravity(Gravity.CENTER_VERTICAL);
@@ -416,12 +406,12 @@ public class SettingsActivity extends Activity {
         toggleBtn.setOnClickListener(v -> {
             darkMode = !darkMode;
             themeHelper.setDarkMode(darkMode);
-            recreate(); // 重启 Activity 应用主题
+            recreate();
         });
         themeRow.addView(toggleBtn);
         contentContainer.addView(themeRow);
 
-        // 背景上传
+        // 自定义背景
         TextView bgLabel = new TextView(this);
         bgLabel.setText("自定义背景");
         bgLabel.setTextSize(18);
@@ -459,13 +449,12 @@ public class SettingsActivity extends Activity {
         clearBtn.setOnClickListener(v -> {
             themeHelper.saveBackground(null);
             Toast.makeText(this, "背景已清除", Toast.LENGTH_SHORT).show();
-            // 通知主界面更新（后续可通过广播或全局变量）
+            showThemeManagement();
         });
         bgRow.addView(clearBtn);
 
         contentContainer.addView(bgRow);
 
-        // 显示当前背景状态
         TextView status = new TextView(this);
         status.setText(themeHelper.hasBackground() ? "当前已设置自定义背景" : "当前未设置背景");
         status.setTextSize(14);
@@ -478,20 +467,18 @@ public class SettingsActivity extends Activity {
     private void checkPermissionAndPickImage() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             // Android 13+
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES)
                     != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_MEDIA_IMAGES},
+                requestPermissions(new String[]{Manifest.permission.READ_MEDIA_IMAGES},
                         PERMISSION_REQUEST);
             } else {
                 pickImage();
             }
         } else {
             // Android 12 及以下
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
                     != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
                         PERMISSION_REQUEST);
             } else {
                 pickImage();
@@ -505,8 +492,8 @@ public class SettingsActivity extends Activity {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
-                                           @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == PERMISSION_REQUEST) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -526,7 +513,6 @@ public class SettingsActivity extends Activity {
                 Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
                 themeHelper.saveBackground(bitmap);
                 Toast.makeText(this, "背景已更新", Toast.LENGTH_SHORT).show();
-                // 重新显示管理软件界面以更新状态
                 showThemeManagement();
             } catch (IOException e) {
                 e.printStackTrace();
