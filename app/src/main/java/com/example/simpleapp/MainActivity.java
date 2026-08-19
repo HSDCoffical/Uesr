@@ -677,7 +677,7 @@ private void closeMenu() {
 
     private void regenerateMessage(int position) {
         if (position < 0 || position >= messages.size()) return;
-        if (!messages.get(position).getRole().equals("assistant")) {
+        if (!messages.get(position).getRole().equals("ai")) {
             Toast.makeText(this, "只能重新生成AI回复", Toast.LENGTH_SHORT).show();
             return;
         }
