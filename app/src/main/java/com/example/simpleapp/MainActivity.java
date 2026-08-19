@@ -7,6 +7,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -14,6 +15,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Gravity;
@@ -38,6 +40,8 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +50,7 @@ public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private static final String PREFS_NAME = "chat_prefs";
     private static final String KEY_HISTORY = "chat_history";
+    private static final int PERMISSION_REQUEST_WRITE = 1003;
 
     private SettingsHelper settingsHelper;
     private ApiHelper apiHelper;
@@ -389,6 +394,7 @@ public class MainActivity extends Activity {
     menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
     menuPanel.setPadding(20, 100, 20, 20);
 
+    // 设置
     LinearLayout itemSettings = createMenuItem("设置");
     itemSettings.setOnClickListener(v -> {
         closeMenu();
@@ -397,14 +403,16 @@ public class MainActivity extends Activity {
     });
     menuPanel.addView(itemSettings);
 
-    View divider = new View(this);
-    divider.setLayoutParams(new LinearLayout.LayoutParams(
+    // 分割线1
+    View divider1 = new View(this);
+    divider1.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             dpToPx(1)
     ));
-    divider.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
-    menuPanel.addView(divider);
+    divider1.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
+    menuPanel.addView(divider1);
 
+    // 清空
     LinearLayout itemClear = createMenuItem("清空");
     itemClear.setOnClickListener(v -> {
         closeMenu();
@@ -415,6 +423,24 @@ public class MainActivity extends Activity {
     });
     menuPanel.addView(itemClear);
 
+    // 分割线2
+    View divider2 = new View(this);
+    divider2.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            dpToPx(1)
+    ));
+    divider2.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
+    menuPanel.addView(divider2);
+
+    // 导出对话
+    LinearLayout itemExport = createMenuItem("导出对话");
+    itemExport.setOnClickListener(v -> {
+        closeMenu();
+        checkAndExport();
+    });
+    menuPanel.addView(itemExport);
+
+    // 底部空白区域
     View closeArea = new View(this);
     closeArea.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -588,7 +614,6 @@ private void closeMenu() {
             });
             wrapper.addView(bubble);
 
-            // 时间戳
             TextView timeView = new TextView(this);
             timeView.setText(formatTime(msg.getTimestamp()));
             timeView.setTextSize(10);
@@ -776,6 +801,71 @@ private void closeMenu() {
                 });
             }
         });
+    }
+
+    // ----- 导出对话功能 + 权限处理 -----
+    private void checkAndExport() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        PERMISSION_REQUEST_WRITE);
+                return;
+            }
+        }
+        exportChat();
+    }
+
+    private void exportChat() {
+        if (messages.isEmpty()) {
+            Toast.makeText(this, "没有可导出的对话", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("AI Chat 对话导出\n");
+            sb.append("导出时间: ").append(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date())).append("\n\n");
+            sb.append("====================================\n\n");
+
+            for (ChatMessage msg : messages) {
+                String role = msg.getRole().equals("user") ? "我" : "AI";
+                String time = formatTime(msg.getTimestamp());
+                sb.append("[").append(role).append("] ").append(time).append("\n");
+                sb.append(msg.getContent()).append("\n\n");
+            }
+
+            sb.append("====================================\n");
+            sb.append("—— 导出结束 ——");
+
+            // 保存到 Downloads 目录
+            File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+            String fileName = "AI_Chat_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt";
+            File file = new File(dir, fileName);
+            FileWriter writer = new FileWriter(file);
+            writer.write(sb.toString());
+            writer.close();
+
+            Toast.makeText(this, "导出成功！\n" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            Log.e(TAG, "导出失败", e);
+            Toast.makeText(this, "导出失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_WRITE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                exportChat();
+            } else {
+                Toast.makeText(this, "需要存储权限才能导出对话", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     @Override
