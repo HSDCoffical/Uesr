@@ -50,6 +50,11 @@ public class SettingsActivity extends Activity {
     private boolean darkMode = false;
     private Button fab;
 
+    // dp 转 px 工具方法
+    private int dpToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,21 +66,21 @@ public class SettingsActivity extends Activity {
         // 主布局
         LinearLayout mainLayout = new LinearLayout(this);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
-        mainLayout.setPadding(12, 12, 12, 12);
+        mainLayout.setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12));
         mainLayout.setBackgroundColor(darkMode ? Color.parseColor("#303030") : Color.parseColor("#F5F5F5"));
 
         TextView title = new TextView(this);
         title.setText("设置");
         title.setTextSize(20);
         title.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
-        title.setPadding(0, 0, 0, 16);
+        title.setPadding(0, 0, 0, dpToPx(16));
         mainLayout.addView(title);
 
         // Tab 栏
         LinearLayout tabBar = new LinearLayout(this);
         tabBar.setOrientation(LinearLayout.HORIZONTAL);
         tabBar.setWeightSum(3);
-        tabBar.setPadding(0, 0, 0, 12);
+        tabBar.setPadding(0, 0, 0, dpToPx(12));
 
         tabAi = createMaterialTab("管理AI");
         tabTheme = createMaterialTab("管理软件");
@@ -101,28 +106,28 @@ public class SettingsActivity extends Activity {
         ));
         contentContainer = new LinearLayout(this);
         contentContainer.setOrientation(LinearLayout.VERTICAL);
-        contentContainer.setPadding(8, 8, 8, 8);
+        contentContainer.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8));
         scrollView.addView(contentContainer);
         frameContainer.addView(scrollView);
 
-        // 悬浮添加按钮（仅管理AI页面显示）
+        // ====== 悬浮添加按钮（FAB）修复为正圆 ======
         fab = new Button(this);
         fab.setText("+");
         fab.setTextSize(28);
-        fab.setBackgroundColor(Color.parseColor("#007AFF"));
         fab.setTextColor(Color.WHITE);
+        // 关键修复：设置固定宽高，且相等，形成正圆
+        int fabSize = dpToPx(56);
+        FrameLayout.LayoutParams fabParams = new FrameLayout.LayoutParams(fabSize, fabSize);
+        fabParams.gravity = Gravity.BOTTOM | Gravity.END;
+        fabParams.setMargins(0, 0, dpToPx(24), dpToPx(24));
+        fab.setLayoutParams(fabParams);
+        // 移除内边距，让 "+" 完美居中
+        fab.setPadding(0, 0, 0, 0);
+        // 圆形背景
         GradientDrawable circle = new GradientDrawable();
         circle.setShape(GradientDrawable.OVAL);
         circle.setColor(Color.parseColor("#007AFF"));
         fab.setBackground(circle);
-        fab.setPadding(20, 14, 20, 14);
-        FrameLayout.LayoutParams fabParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-        );
-        fabParams.gravity = Gravity.BOTTOM | Gravity.END;
-        fabParams.setMargins(0, 0, 24, 24);
-        fab.setLayoutParams(fabParams);
         fab.setOnClickListener(v -> showAddConfigDialog());
         fab.setVisibility(View.GONE);
         frameContainer.addView(fab);
@@ -137,208 +142,205 @@ public class SettingsActivity extends Activity {
         tabAi.setOnClickListener(v -> { resetTabColors(); highlightTab(tabAi); showAiManagement(); fab.setVisibility(View.VISIBLE); });
         tabTheme.setOnClickListener(v -> { resetTabColors(); highlightTab(tabTheme); showThemeManagement(); fab.setVisibility(View.GONE); });
         tabAbout.setOnClickListener(v -> { resetTabColors(); highlightTab(tabAbout); showAbout(); fab.setVisibility(View.GONE); });
+    }private Button createMaterialTab(String text) {
+    Button btn = new Button(this);
+    btn.setText(text);
+    btn.setTextSize(14);
+    btn.setAllCaps(false);
+    btn.setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8));
+    GradientDrawable shape = new GradientDrawable();
+    shape.setCornerRadius(dpToPx(20));
+    shape.setColor(Color.parseColor("#E0E0E0"));
+    btn.setBackground(shape);
+    btn.setTextColor(Color.BLACK);
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
+    params.setMargins(dpToPx(3), 0, dpToPx(3), 0);
+    btn.setLayoutParams(params);
+    return btn;
+}
+
+private void resetTabColors() {
+    tabAi.setBackgroundColor(Color.parseColor("#E0E0E0"));
+    tabAi.setTextColor(Color.BLACK);
+    tabTheme.setBackgroundColor(Color.parseColor("#E0E0E0"));
+    tabTheme.setTextColor(Color.BLACK);
+    tabAbout.setBackgroundColor(Color.parseColor("#E0E0E0"));
+    tabAbout.setTextColor(Color.BLACK);
+}
+
+private void highlightTab(Button tab) {
+    tab.setBackgroundColor(Color.parseColor("#007AFF"));
+    tab.setTextColor(Color.WHITE);
+}
+
+// ---------- 管理AI ----------
+private void showAiManagement() {
+    contentContainer.removeAllViews();
+
+    TextView currentHint = new TextView(this);
+    currentHint.setText("当前使用: " + getCurrentConfigName());
+    currentHint.setTextSize(14);
+    currentHint.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
+    currentHint.setPadding(0, 0, 0, dpToPx(12));
+    contentContainer.addView(currentHint);
+
+    for (ApiConfig config : configs) {
+        LinearLayout item = createConfigItem(config);
+        contentContainer.addView(item);
     }
+}
 
-    private Button createMaterialTab(String text) {
-        Button btn = new Button(this);
-        btn.setText(text);
-        btn.setTextSize(14);
-        btn.setAllCaps(false);
-        btn.setPadding(12, 8, 12, 8);
-        GradientDrawable shape = new GradientDrawable();
-        shape.setCornerRadius(20);
-        shape.setColor(Color.parseColor("#E0E0E0"));
-        btn.setBackground(shape);
-        btn.setTextColor(Color.BLACK);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1);
-        params.setMargins(3, 0, 3, 0);
-        btn.setLayoutParams(params);
-        return btn;
-    }
+private LinearLayout createConfigItem(ApiConfig config) {
+    LinearLayout item = new LinearLayout(this);
+    item.setOrientation(LinearLayout.HORIZONTAL);
+    item.setGravity(Gravity.CENTER_VERTICAL);
+    // 美化卡片：圆角+阴影效果
+    GradientDrawable card = new GradientDrawable();
+    card.setCornerRadius(dpToPx(10));
+    card.setColor(darkMode ? Color.parseColor("#424242") : Color.WHITE);
+    card.setStroke(1, darkMode ? Color.parseColor("#666666") : Color.parseColor("#DDDDDD"));
+    item.setBackground(card);
+    item.setPadding(dpToPx(14), dpToPx(14), dpToPx(14), dpToPx(14));
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+    );
+    params.setMargins(0, dpToPx(6), 0, dpToPx(6));
+    item.setLayoutParams(params);
 
-    private void resetTabColors() {
-        tabAi.setBackgroundColor(Color.parseColor("#E0E0E0"));
-        tabAi.setTextColor(Color.BLACK);
-        tabTheme.setBackgroundColor(Color.parseColor("#E0E0E0"));
-        tabTheme.setTextColor(Color.BLACK);
-        tabAbout.setBackgroundColor(Color.parseColor("#E0E0E0"));
-        tabAbout.setTextColor(Color.BLACK);
-    }
+    LinearLayout info = new LinearLayout(this);
+    info.setOrientation(LinearLayout.VERTICAL);
+    info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-    private void highlightTab(Button tab) {
-        tab.setBackgroundColor(Color.parseColor("#007AFF"));
-        tab.setTextColor(Color.WHITE);
-    }
+    TextView nameView = new TextView(this);
+    nameView.setText(config.getName() + " (" + config.getModel() + ")");
+    nameView.setTextSize(14);
+    nameView.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
+    info.addView(nameView);
 
-    // ---------- 管理AI ----------
-    private void showAiManagement() {
-        contentContainer.removeAllViews();
+    TextView urlView = new TextView(this);
+    urlView.setText(config.getBaseUrl());
+    urlView.setTextSize(11);
+    urlView.setTextColor(darkMode ? Color.LTGRAY : Color.GRAY);
+    info.addView(urlView);
 
-        TextView currentHint = new TextView(this);
-        currentHint.setText("当前使用: " + getCurrentConfigName());
-        currentHint.setTextSize(14);
-        currentHint.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
-        currentHint.setPadding(0, 0, 0, 12);
-        contentContainer.addView(currentHint);
+    item.addView(info);
 
-        for (ApiConfig config : configs) {
-            LinearLayout item = createConfigItem(config);
-            contentContainer.addView(item);
-        }
-    }
-
-    private LinearLayout createConfigItem(ApiConfig config) {
-        LinearLayout item = new LinearLayout(this);
-        item.setOrientation(LinearLayout.HORIZONTAL);
-        item.setGravity(Gravity.CENTER_VERTICAL);
-        GradientDrawable card = new GradientDrawable();
-        card.setCornerRadius(8);
-        card.setColor(darkMode ? Color.parseColor("#424242") : Color.WHITE);
-        card.setStroke(1, darkMode ? Color.parseColor("#666666") : Color.parseColor("#DDDDDD"));
-        item.setBackground(card);
-        item.setPadding(12, 12, 12, 12);
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        params.setMargins(0, 4, 0, 4);
-        item.setLayoutParams(params);
-
-        LinearLayout info = new LinearLayout(this);
-        info.setOrientation(LinearLayout.VERTICAL);
-        info.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
-
-        TextView nameView = new TextView(this);
-        nameView.setText(config.getName() + " (" + config.getModel() + ")");
-        nameView.setTextSize(14);
-        nameView.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
-        info.addView(nameView);
-
-        TextView urlView = new TextView(this);
-        urlView.setText(config.getBaseUrl());
-        urlView.setTextSize(11);
-        urlView.setTextColor(darkMode ? Color.LTGRAY : Color.GRAY);
-        info.addView(urlView);
-
-        item.addView(info);
-
-        boolean isCurrent = config.getId().equals(currentConfigId);
-        Button useBtn = new Button(this);
-        useBtn.setAllCaps(false);
-        useBtn.setTextSize(12);
-        if (isCurrent) {
-            useBtn.setText("✓ 已使用");
-            useBtn.setEnabled(false);
-            useBtn.setBackgroundColor(Color.parseColor("#34C759"));
-        } else {
-            useBtn.setText("使用");
-            useBtn.setBackgroundColor(Color.parseColor("#007AFF"));
-            useBtn.setOnClickListener(v -> {
-                setCurrentConfig(config.getId());
-                showAiManagement();
-                Toast.makeText(this, "已切换到: " + config.getName(), Toast.LENGTH_SHORT).show();
-            });
-        }
-        useBtn.setTextColor(Color.WHITE);
-        useBtn.setPadding(14, 6, 14, 6);
-        GradientDrawable btnShape = new GradientDrawable();
-        btnShape.setCornerRadius(16);
-        btnShape.setColor(isCurrent ? Color.parseColor("#34C759") : Color.parseColor("#007AFF"));
-        useBtn.setBackground(btnShape);
-        item.addView(useBtn);
-
-        Button deleteBtn = new Button(this);
-        deleteBtn.setText("✕");
-        deleteBtn.setTextSize(14);
-        deleteBtn.setBackground(null);
-        deleteBtn.setTextColor(Color.RED);
-        deleteBtn.setPadding(6, 0, 6, 0);
-        deleteBtn.setOnClickListener(v -> confirmDelete(config.getId()));
-        item.addView(deleteBtn);
-
-        return item;
-    }
-
-    private void showAddConfigDialog() {
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("新增AI配置");
-
-        LinearLayout layout = new LinearLayout(this);
-        layout.setOrientation(LinearLayout.VERTICAL);
-        layout.setPadding(32, 16, 32, 16);
-
-        final EditText etName = new EditText(this);
-        etName.setHint("配置名称（如：Agnes）");
-        layout.addView(etName);
-
-        final EditText etBaseUrl = new EditText(this);
-        etBaseUrl.setHint("Base URL");
-        layout.addView(etBaseUrl);
-
-        final EditText etApiKey = new EditText(this);
-        etApiKey.setHint("API Key");
-        etApiKey.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        layout.addView(etApiKey);
-
-        final EditText etModel = new EditText(this);
-        etModel.setHint("模型名称");
-        layout.addView(etModel);
-
-        builder.setView(layout);
-        builder.setPositiveButton("保存", (dialog, which) -> {
-            String name = etName.getText().toString().trim();
-            String baseUrl = etBaseUrl.getText().toString().trim();
-            String apiKey = etApiKey.getText().toString().trim();
-            String model = etModel.getText().toString().trim();
-            if (name.isEmpty() || baseUrl.isEmpty() || apiKey.isEmpty() || model.isEmpty()) {
-                Toast.makeText(this, "请填写完整信息", Toast.LENGTH_SHORT).show();
-                return;
-            }
-            String id = UUID.randomUUID().toString();
-            ApiConfig newConfig = new ApiConfig(id, name, baseUrl, apiKey, model);
-            configs.add(newConfig);
-            saveConfigs();
-            if (configs.size() == 1) {
-                setCurrentConfig(id);
-            }
+    boolean isCurrent = config.getId().equals(currentConfigId);
+    Button useBtn = new Button(this);
+    useBtn.setAllCaps(false);
+    useBtn.setTextSize(12);
+    if (isCurrent) {
+        useBtn.setText("✓ 已使用");
+        useBtn.setEnabled(false);
+        useBtn.setBackgroundColor(Color.parseColor("#34C759"));
+    } else {
+        useBtn.setText("使用");
+        useBtn.setBackgroundColor(Color.parseColor("#007AFF"));
+        useBtn.setOnClickListener(v -> {
+            setCurrentConfig(config.getId());
             showAiManagement();
-            Toast.makeText(this, "配置已添加", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "已切换到: " + config.getName(), Toast.LENGTH_SHORT).show();
         });
-        builder.setNegativeButton("取消", null);
-        builder.show();
     }
+    useBtn.setTextColor(Color.WHITE);
+    useBtn.setPadding(dpToPx(14), dpToPx(6), dpToPx(14), dpToPx(6));
+    GradientDrawable btnShape = new GradientDrawable();
+    btnShape.setCornerRadius(dpToPx(16));
+    btnShape.setColor(isCurrent ? Color.parseColor("#34C759") : Color.parseColor("#007AFF"));
+    useBtn.setBackground(btnShape);
+    item.addView(useBtn);
 
-    private void confirmDelete(String id) {
-        new AlertDialog.Builder(this)
-                .setTitle("删除配置")
-                .setMessage("确定要删除此配置吗？")
-                .setPositiveButton("删除", (dialog, which) -> {
-                    configs.removeIf(c -> c.getId().equals(id));
-                    if (currentConfigId != null && currentConfigId.equals(id)) {
-                        currentConfigId = null;
-                        if (!configs.isEmpty()) {
-                            setCurrentConfig(configs.get(0).getId());
-                        }
-                    }
-                    saveConfigs();
-                    showAiManagement();
-                    Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
-                })
-                .setNegativeButton("取消", null)
-                .show();
-    }
+    Button deleteBtn = new Button(this);
+    deleteBtn.setText("✕");
+    deleteBtn.setTextSize(14);
+    deleteBtn.setBackground(null);
+    deleteBtn.setTextColor(Color.RED);
+    deleteBtn.setPadding(dpToPx(6), 0, dpToPx(6), 0);
+    deleteBtn.setOnClickListener(v -> confirmDelete(config.getId()));
+    item.addView(deleteBtn);
 
-    private String getCurrentConfigName() {
-        if (currentConfigId == null) return "未配置";
-        for (ApiConfig c : configs) {
-            if (c.getId().equals(currentConfigId)) {
-                return c.getName();
-            }
+    return item;
+}
+
+private void showAddConfigDialog() {
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    builder.setTitle("新增AI配置");
+
+    LinearLayout layout = new LinearLayout(this);
+    layout.setOrientation(LinearLayout.VERTICAL);
+    layout.setPadding(dpToPx(32), dpToPx(16), dpToPx(32), dpToPx(16));
+
+    final EditText etName = new EditText(this);
+    etName.setHint("配置名称（如：Agnes）");
+    layout.addView(etName);
+
+    final EditText etBaseUrl = new EditText(this);
+    etBaseUrl.setHint("Base URL");
+    layout.addView(etBaseUrl);
+
+    final EditText etApiKey = new EditText(this);
+    etApiKey.setHint("API Key");
+    etApiKey.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+    layout.addView(etApiKey);
+
+    final EditText etModel = new EditText(this);
+    etModel.setHint("模型名称");
+    layout.addView(etModel);
+
+    builder.setView(layout);
+    builder.setPositiveButton("保存", (dialog, which) -> {
+        String name = etName.getText().toString().trim();
+        String baseUrl = etBaseUrl.getText().toString().trim();
+        String apiKey = etApiKey.getText().toString().trim();
+        String model = etModel.getText().toString().trim();
+        if (name.isEmpty() || baseUrl.isEmpty() || apiKey.isEmpty() || model.isEmpty()) {
+            Toast.makeText(this, "请填写完整信息", Toast.LENGTH_SHORT).show();
+            return;
         }
-        return "未配置";
-    }
+        String id = UUID.randomUUID().toString();
+        ApiConfig newConfig = new ApiConfig(id, name, baseUrl, apiKey, model);
+        configs.add(newConfig);
+        saveConfigs();
+        if (configs.size() == 1) {
+            setCurrentConfig(id);
+        }
+        showAiManagement();
+        Toast.makeText(this, "配置已添加", Toast.LENGTH_SHORT).show();
+    });
+    builder.setNegativeButton("取消", null);
+    builder.show();
+}
 
-    // ---------- 数据持久化 ----------
+private void confirmDelete(String id) {
+    new AlertDialog.Builder(this)
+            .setTitle("删除配置")
+            .setMessage("确定要删除此配置吗？")
+            .setPositiveButton("删除", (dialog, which) -> {
+                configs.removeIf(c -> c.getId().equals(id));
+                if (currentConfigId != null && currentConfigId.equals(id)) {
+                    currentConfigId = null;
+                    if (!configs.isEmpty()) {
+                        setCurrentConfig(configs.get(0).getId());
+                    }
+                }
+                saveConfigs();
+                showAiManagement();
+                Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
+            })
+            .setNegativeButton("取消", null)
+            .show();
+}
+
+private String getCurrentConfigName() {
+    if (currentConfigId == null) return "未配置";
+    for (ApiConfig c : configs) {
+        if (c.getId().equals(currentConfigId)) {
+            return c.getName();
+        }
+    }
+    return "未配置";
+}    // ---------- 数据持久化 ----------
     private void loadConfigs() {
         SharedPreferences prefs = getSharedPreferences("settings_prefs", MODE_PRIVATE);
         String json = prefs.getString("api_configs", "");
@@ -396,15 +398,15 @@ public class SettingsActivity extends Activity {
         }
     }
 
-    // ---------- 管理软件 ----------
+    // ---------- 管理软件（保留原有内容） ----------
     private void showThemeManagement() {
         contentContainer.removeAllViews();
 
-        // 深色模式 - 使用 Switch
+        // 深色模式
         LinearLayout themeRow = new LinearLayout(this);
         themeRow.setOrientation(LinearLayout.HORIZONTAL);
         themeRow.setGravity(Gravity.CENTER_VERTICAL);
-        themeRow.setPadding(0, 0, 0, 20);
+        themeRow.setPadding(0, 0, 0, dpToPx(20));
 
         TextView themeLabel = new TextView(this);
         themeLabel.setText("深色模式");
@@ -428,7 +430,7 @@ public class SettingsActivity extends Activity {
         bgLabel.setText("自定义背景");
         bgLabel.setTextSize(16);
         bgLabel.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
-        bgLabel.setPadding(0, 16, 0, 8);
+        bgLabel.setPadding(0, dpToPx(16), 0, dpToPx(8));
         contentContainer.addView(bgLabel);
 
         LinearLayout bgRow = new LinearLayout(this);
@@ -441,9 +443,9 @@ public class SettingsActivity extends Activity {
         uploadBtn.setTextSize(14);
         uploadBtn.setBackgroundColor(Color.parseColor("#E0E0E0"));
         uploadBtn.setTextColor(Color.BLACK);
-        uploadBtn.setPadding(16, 8, 16, 8);
+        uploadBtn.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8));
         GradientDrawable upShape = new GradientDrawable();
-        upShape.setCornerRadius(16);
+        upShape.setCornerRadius(dpToPx(16));
         upShape.setColor(Color.parseColor("#E0E0E0"));
         uploadBtn.setBackground(upShape);
         uploadBtn.setOnClickListener(v -> checkPermissionAndPickImage());
@@ -455,9 +457,9 @@ public class SettingsActivity extends Activity {
         clearBtn.setTextSize(14);
         clearBtn.setBackgroundColor(Color.parseColor("#E0E0E0"));
         clearBtn.setTextColor(Color.BLACK);
-        clearBtn.setPadding(16, 8, 16, 8);
+        clearBtn.setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8));
         GradientDrawable clrShape = new GradientDrawable();
-        clrShape.setCornerRadius(16);
+        clrShape.setCornerRadius(dpToPx(16));
         clrShape.setColor(Color.parseColor("#E0E0E0"));
         clearBtn.setBackground(clrShape);
         clearBtn.setOnClickListener(v -> {
@@ -466,29 +468,27 @@ public class SettingsActivity extends Activity {
             showThemeManagement();
         });
         bgRow.addView(clearBtn);
-
         contentContainer.addView(bgRow);
 
-        // 背景透明度控制
+        // 背景透明度
         TextView alphaLabel = new TextView(this);
         int currentAlpha = themeHelper.getBgAlpha();
         alphaLabel.setText("背景透明度 (" + currentAlpha + "%)");
         alphaLabel.setTextSize(14);
         alphaLabel.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
-        alphaLabel.setPadding(0, 16, 0, 8);
+        alphaLabel.setPadding(0, dpToPx(16), 0, dpToPx(8));
         contentContainer.addView(alphaLabel);
 
         LinearLayout alphaRow = new LinearLayout(this);
         alphaRow.setOrientation(LinearLayout.HORIZONTAL);
         alphaRow.setGravity(Gravity.CENTER_VERTICAL);
 
-        // 将 etAlpha 声明为 final 并放在这里（在监听器之前）
         final EditText etAlpha = new EditText(this);
         etAlpha.setInputType(InputType.TYPE_CLASS_NUMBER);
         etAlpha.setText(String.valueOf(currentAlpha));
-        etAlpha.setMinWidth(60);
+        etAlpha.setMinWidth(dpToPx(60));
         etAlpha.setGravity(Gravity.CENTER);
-        etAlpha.setPadding(8, 4, 8, 4);
+        etAlpha.setPadding(dpToPx(8), dpToPx(4), dpToPx(8), dpToPx(4));
         etAlpha.setBackgroundResource(android.R.drawable.editbox_background);
 
         SeekBar seekBar = new SeekBar(this);
@@ -509,10 +509,8 @@ public class SettingsActivity extends Activity {
         });
         alphaRow.addView(seekBar);
         alphaRow.addView(etAlpha);
-
         contentContainer.addView(alphaRow);
 
-        // 数值输入框焦点丢失时同步
         etAlpha.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) {
                 try {
@@ -526,12 +524,11 @@ public class SettingsActivity extends Activity {
             }
         });
 
-        // 状态显示
         TextView status = new TextView(this);
         status.setText(themeHelper.hasBackground() ? "当前已设置自定义背景" : "当前未设置背景");
         status.setTextSize(12);
         status.setTextColor(darkMode ? Color.LTGRAY : Color.GRAY);
-        status.setPadding(0, 8, 0, 0);
+        status.setPadding(0, dpToPx(8), 0, 0);
         contentContainer.addView(status);
     }
 
@@ -600,7 +597,7 @@ public class SettingsActivity extends Activity {
         about.setTextSize(14);
         about.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
         about.setGravity(Gravity.CENTER);
-        about.setPadding(16, 40, 16, 40);
+        about.setPadding(dpToPx(16), dpToPx(40), dpToPx(16), dpToPx(40));
         contentContainer.addView(about);
     }
 }
