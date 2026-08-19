@@ -638,7 +638,7 @@ private void closeMenu() {
         }
 
         final String[] options;
-        final boolean isAi = msg.getRole().equals("assistant");
+        final boolean isAi = msg.getRole().equals("ai");
         if (isAi) {
             options = new String[]{"复制", "重新生成", "删除"};
         } else {
