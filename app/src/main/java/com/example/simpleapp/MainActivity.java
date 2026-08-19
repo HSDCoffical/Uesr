@@ -74,7 +74,6 @@ public class MainActivity extends Activity {
     // 状态栏高度
     private int statusBarHeight = 0;
 
-    // 获取状态栏高度
     private int getStatusBarHeight() {
         int result = 0;
         int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
@@ -84,7 +83,6 @@ public class MainActivity extends Activity {
         return result;
     }
 
-    // dp 转 px 工具方法
     private int dpToPx(int dp) {
         return (int) (dp * getResources().getDisplayMetrics().density);
     }
@@ -106,7 +104,6 @@ public class MainActivity extends Activity {
 
         loadHistory();
 
-        // 获取状态栏高度
         statusBarHeight = getStatusBarHeight();
 
         mainLayout = new FrameLayout(this);
@@ -123,7 +120,6 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
-        // 状态栏白色背景（遮挡背景图顶部），高度扩展为状态栏高度的2倍
         View statusBarView = new View(this);
         statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -165,7 +161,6 @@ public class MainActivity extends Activity {
                     return;
                 }
 
-                // 添加用户消息
                 messages.add(new ChatMessage("user", input));
                 saveHistory();
                 renderMessages();
@@ -174,7 +169,6 @@ public class MainActivity extends Activity {
                 setLoading(true);
                 waitingForResponse = true;
 
-                // 超时检测
                 timeoutRunnable = () -> {
                     if (waitingForResponse) {
                         waitingForResponse = false;
@@ -198,7 +192,6 @@ public class MainActivity extends Activity {
                     throw new IllegalArgumentException("API Key 不能为空");
                 }
 
-                // 添加占位消息用于流式更新
                 messages.add(new ChatMessage("ai", ""));
                 final int aiMsgIndex = messages.size() - 1;
                 saveHistory();
@@ -271,7 +264,6 @@ public class MainActivity extends Activity {
         main.setOrientation(LinearLayout.VERTICAL);
         main.setPadding(16, 0, 16, 22);
 
-        // 顶部栏
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
@@ -397,7 +389,6 @@ public class MainActivity extends Activity {
     menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
     menuPanel.setPadding(20, 100, 20, 20);
 
-    // 菜单项1：设置
     LinearLayout itemSettings = createMenuItem("设置");
     itemSettings.setOnClickListener(v -> {
         closeMenu();
@@ -406,7 +397,6 @@ public class MainActivity extends Activity {
     });
     menuPanel.addView(itemSettings);
 
-    // 分割线
     View divider = new View(this);
     divider.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -415,7 +405,6 @@ public class MainActivity extends Activity {
     divider.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
     menuPanel.addView(divider);
 
-    // 菜单项2：清空
     LinearLayout itemClear = createMenuItem("清空");
     itemClear.setOnClickListener(v -> {
         closeMenu();
@@ -426,7 +415,6 @@ public class MainActivity extends Activity {
     });
     menuPanel.addView(itemClear);
 
-    // 底部空白区域
     View closeArea = new View(this);
     closeArea.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -554,6 +542,14 @@ private void closeMenu() {
         renderMessages();
     }
 
+    private String formatTime(long timestamp) {
+        if (timestamp == 0) {
+            return "刚刚";
+        }
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
+        return sdf.format(new java.util.Date(timestamp));
+    }
+
     private void renderMessages() {
         chatContainer.removeAllViews();
 
@@ -571,29 +567,41 @@ private void closeMenu() {
         for (int i = 0; i < messages.size(); i++) {
             ChatMessage msg = messages.get(i);
             boolean isUser = msg.getRole().equals("user");
-            LinearLayout row = new LinearLayout(this);
-            row.setOrientation(LinearLayout.HORIZONTAL);
-            row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setLayoutParams(new LinearLayout.LayoutParams(
+
+            LinearLayout wrapper = new LinearLayout(this);
+            wrapper.setOrientation(LinearLayout.VERTICAL);
+            wrapper.setLayoutParams(new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT
             ));
+            if (isUser) {
+                wrapper.setGravity(Gravity.END);
+            } else {
+                wrapper.setGravity(Gravity.START);
+            }
 
             TextView bubble = createBubble(msg.getContent(), isUser);
-            // 存储消息索引，用于长按菜单
             final int position = i;
             bubble.setOnLongClickListener(v -> {
                 showMessageMenu(position);
                 return true;
             });
+            wrapper.addView(bubble);
+
+            // 时间戳
+            TextView timeView = new TextView(this);
+            timeView.setText(formatTime(msg.getTimestamp()));
+            timeView.setTextSize(10);
+            timeView.setTextColor(Color.parseColor("#999999"));
+            timeView.setPadding(4, 4, 4, 4);
             if (isUser) {
-                row.setGravity(Gravity.END);
-                row.addView(bubble);
+                timeView.setGravity(Gravity.END);
             } else {
-                row.setGravity(Gravity.START);
-                row.addView(bubble);
+                timeView.setGravity(Gravity.START);
             }
-            chatContainer.addView(row);
+            wrapper.addView(timeView);
+
+            chatContainer.addView(wrapper);
         }
 
         scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
@@ -632,7 +640,6 @@ private void closeMenu() {
         if (position < 0 || position >= messages.size()) return;
         final ChatMessage msg = messages.get(position);
         if (msg.getContent().startsWith("[超时]") || msg.getContent().startsWith("[错误]") || msg.getContent().startsWith("[系统错误]")) {
-            // 错误消息不能操作
             Toast.makeText(this, "错误消息不支持操作", Toast.LENGTH_SHORT).show();
             return;
         }
@@ -682,7 +689,6 @@ private void closeMenu() {
             return;
         }
 
-        // 找到这条AI消息之前最近的用户消息
         int userMsgIndex = -1;
         for (int i = position - 1; i >= 0; i--) {
             if (messages.get(i).getRole().equals("user")) {
@@ -695,50 +701,16 @@ private void closeMenu() {
             return;
         }
 
-        // 删除当前AI消息及其后的所有消息（如果有后续对话，应当一并删除？为了简单，只删除当前AI消息）
-        // 更合理的做法：删除从当前AI消息到末尾的所有消息（因为重新生成会创建新分支）
-        // 但为简化，只删除当前AI消息，然后重新请求
-        String userInput = messages.get(userMsgIndex).getContent();
-        // 移除当前AI消息
         messages.remove(position);
-        // 如果当前AI消息后面还有消息，也一并移除（保持对话连续性）
-        // 但为了简化，我们只移除当前AI消息，然后重新发送用户消息
-        // 重新发送用户消息（需要构建历史消息列表，但这里简单处理：将用户消息重新提交，并带上之前的历史）
-        // 更好的做法：保留历史，但重新生成相当于移除该条AI消息，然后重新请求
-        // 我们可以直接复用发送逻辑，但需要构造包含该用户消息的历史（不包括当前AI消息）
-        // 当前messages中已删除AI消息，所以我们直接再次发送该用户消息（但需要用户确认？自动发送）
-        // 但是为了不重复添加用户消息，我们应当模拟用户再次输入，但不要添加重复用户消息。
-        // 我们可以在用户消息之后添加新的AI消息，重新调用API。
-        // 最稳妥：用当前消息列表（不含该AI消息）作为历史，然后发送相同的用户输入，但用户输入已存在，需避免重复添加。
-        // 简单方案：在用户消息后添加新的AI占位，然后调用API，用当前列表作为历史。
-        // 但当前列表已包含用户消息，所以直接调用发送逻辑，但需要传入完整的history，并且不添加新的用户消息。
-        // 这里我们复用发送逻辑，但需要修改：让用户消息不再重复添加。
-        // 为快速实现，我们提取历史消息（从开头到用户消息位置），然后重新发送用户消息。
-        // 我们重新构建history列表，从开头到用户消息（包含用户消息），然后调用API，在回调中追加到messages尾部。
-        // 但由于我们已经有messages列表，我们临时截断：删除AI消息后，以当前messages作为历史，但当前messages末尾就是用户消息，所以直接调用发送API，但需要添加占位。
-        // 简化：直接再次发送该用户消息，但我们会创建一个新的用户消息？不，我们使用已有的用户消息。
-        // 我们采用一种简便方法：将当前用户消息复制一份作为新的消息？不，复制会导致重复。
-        // 实际上，我们应当只保留用户消息作为历史，然后发送请求。
-        // 由于我们已经删除了AI消息，所以当前消息列表的最后一条就是用户消息。
-        // 我们直接基于当前消息列表发送请求，但需要添加一个AI占位。
-        // 因此，我们直接复用发送逻辑，但这次不添加用户消息，而是直接使用当前列表作为历史。
-        // 但我们的发送逻辑会添加用户消息，所以我们需要一个单独的发送函数。
-        // 为了快速，我们重新实现一个简化的发送方法。
-        // 但时间有限，我们采用最直接的方法：提取用户输入，然后清空该用户消息之后的所有消息，重新发送。
-        // 我们直接使用已有的发送逻辑，但需要清理掉被删除的AI消息及其后续消息。
-        // 我们已经删除了position位置的AI消息，但后续消息可能还存在，我们一并删除。
         int currentSize = messages.size();
         if (position < currentSize) {
-            // 删除从position到末尾的所有消息（保持对话干净）
             messages.subList(position, currentSize).clear();
         }
-        // 现在messages末尾是用户消息，我们添加占位AI消息
         messages.add(new ChatMessage("ai", ""));
         final int newAiIndex = messages.size() - 1;
         saveHistory();
         renderMessages();
 
-        // 开始请求
         setLoading(true);
         waitingForResponse = true;
         timeoutRunnable = () -> {
@@ -822,6 +794,12 @@ private void closeMenu() {
             List<ChatMessage> loaded = gson.fromJson(json, type);
             if (loaded != null) {
                 messages = loaded;
+                for (ChatMessage msg : messages) {
+                    if (msg.getTimestamp() == 0) {
+                        msg.setTimestamp(System.currentTimeMillis());
+                    }
+                }
+                saveHistory();
             }
         }
     }
