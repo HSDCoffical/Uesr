@@ -3,11 +3,15 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- 新增：用于导出对话写入文件 -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
         android:label="Simple App"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        <!-- 可选：Android 10 兼容，建议添加 -->
+        android:requestLegacyExternalStorage="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
