@@ -3,7 +3,9 @@ package com.example.simpleapp;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.os.Handler;
@@ -48,43 +50,37 @@ public class MainActivity extends Activity {
 
     private List<ChatMessage> messages = new ArrayList<>();
     private Gson gson = new Gson();
+    private ThemeHelper themeHelper;
+    private LinearLayout mainLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        try {
-            settingsHelper = new SettingsHelper(this);
-            apiHelper = new ApiHelper();
-        } catch (Exception e) {
-            Log.e(TAG, "初始化失败", e);
-            Toast.makeText(this, "初始化失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
-            finish();
-            return;
-        }
+        themeHelper = new ThemeHelper(this);
+        settingsHelper = new SettingsHelper(this);
+        apiHelper = new ApiHelper();
 
         loadHistory();
 
-        // 主布局
-        LinearLayout mainLayout = new LinearLayout(this);
+        // 主布局（稍后会在 onResume 中设置背景）
+        mainLayout = new LinearLayout(this);
         mainLayout.setOrientation(LinearLayout.VERTICAL);
-        mainLayout.setPadding(16, 16, 16, 16);
-        mainLayout.setBackgroundColor(Color.parseColor("#F5F5F5"));
+        mainLayout.setPadding(12, 12, 12, 12);
+        mainLayout.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#303030") : Color.parseColor("#F5F5F5"));
 
         // 标题栏
         LinearLayout titleBar = new LinearLayout(this);
         titleBar.setOrientation(LinearLayout.HORIZONTAL);
         titleBar.setGravity(Gravity.CENTER_VERTICAL);
-        titleBar.setPadding(0, 0, 0, 16);
+        titleBar.setPadding(0, 0, 0, 12);
 
         TextView title = new TextView(this);
         title.setText("AI Chat");
-        title.setTextSize(24);
-        title.setTextColor(Color.parseColor("#1A1A1A"));
+        title.setTextSize(20);
+        title.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         title.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         titleBar.addView(title);
 
-        // 设置按钮
         Button btnSettings = createIconButton("⚙️");
         btnSettings.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
@@ -92,7 +88,6 @@ public class MainActivity extends Activity {
         });
         titleBar.addView(btnSettings);
 
-        // 清空按钮
         Button btnClear = createIconButton("🗑️");
         btnClear.setOnClickListener(v -> {
             messages.clear();
@@ -107,35 +102,35 @@ public class MainActivity extends Activity {
         // 状态
         tvStatus = new TextView(this);
         tvStatus.setText(getStatusText());
-        tvStatus.setTextSize(14);
-        tvStatus.setTextColor(Color.parseColor("#666666"));
-        tvStatus.setPadding(0, 0, 0, 16);
+        tvStatus.setTextSize(12);
+        tvStatus.setTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
+        tvStatus.setPadding(0, 0, 0, 12);
         mainLayout.addView(tvStatus);
 
-        // 聊天容器（滚动）
+        // 聊天容器
         scrollView = new ScrollView(this);
         scrollView.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 0,
                 1.0f
         ));
-        scrollView.setBackgroundColor(Color.parseColor("#F5F5F5"));
+        scrollView.setBackgroundColor(Color.TRANSPARENT);
 
         chatContainer = new LinearLayout(this);
         chatContainer.setOrientation(LinearLayout.VERTICAL);
-        chatContainer.setPadding(8, 8, 8, 8);
+        chatContainer.setPadding(6, 6, 6, 6);
         scrollView.addView(chatContainer);
         mainLayout.addView(scrollView);
 
         // 输入区域
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
-        inputLayout.setPadding(0, 16, 0, 0);
+        inputLayout.setPadding(0, 12, 0, 0);
 
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackgroundResource(android.R.drawable.editbox_background);
-        etInput.setPadding(16, 12, 16, 12);
+        etInput.setPadding(12, 8, 12, 8);
         etInput.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         inputLayout.addView(etInput);
 
@@ -143,7 +138,7 @@ public class MainActivity extends Activity {
         btnSend.setText("发送");
         btnSend.setBackgroundColor(Color.parseColor("#007AFF"));
         btnSend.setTextColor(Color.WHITE);
-        btnSend.setPadding(24, 12, 24, 12);
+        btnSend.setPadding(16, 8, 16, 8);
         inputLayout.addView(btnSend);
         mainLayout.addView(inputLayout);
 
@@ -158,7 +153,6 @@ public class MainActivity extends Activity {
         setContentView(mainLayout);
 
         renderMessages();
-
         timeoutHandler = new Handler();
 
         btnSend.setOnClickListener(v -> {
@@ -178,7 +172,6 @@ public class MainActivity extends Activity {
                     return;
                 }
 
-                // 添加用户消息
                 messages.add(new ChatMessage("user", input));
                 saveHistory();
                 renderMessages();
@@ -187,7 +180,6 @@ public class MainActivity extends Activity {
                 setLoading(true);
                 waitingForResponse = true;
 
-                // 超时检测（30秒）
                 timeoutRunnable = () -> {
                     if (waitingForResponse) {
                         waitingForResponse = false;
@@ -257,26 +249,46 @@ public class MainActivity extends Activity {
         });
     }
 
-    // 创建图标按钮
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // 应用深色模式和背景
+        if (themeHelper.isDarkMode()) {
+            mainLayout.setBackgroundColor(Color.parseColor("#303030"));
+        } else {
+            mainLayout.setBackgroundColor(Color.parseColor("#F5F5F5"));
+        }
+        // 如果设置了自定义背景，覆盖
+        Bitmap bg = themeHelper.getBackground();
+        if (bg != null) {
+            mainLayout.setBackground(new BitmapDrawable(getResources(), bg));
+        }
+        // 刷新状态
+        if (tvStatus != null) {
+            tvStatus.setText(getStatusText());
+        }
+        // 刷新聊天列表（可能是从设置返回时配置已切换）
+        renderMessages();
+    }
+
     private Button createIconButton(String text) {
         Button btn = new Button(this);
         btn.setText(text);
-        btn.setTextSize(20);
+        btn.setTextSize(16);
         btn.setBackground(null);
-        btn.setPadding(8, 0, 8, 0);
+        btn.setPadding(4, 0, 4, 0);
         btn.setMinimumWidth(0);
         btn.setMinimumHeight(0);
         return btn;
     }
 
-    // 渲染消息列表（气泡样式）
     private void renderMessages() {
         chatContainer.removeAllViews();
 
         if (messages.isEmpty()) {
             TextView emptyHint = new TextView(this);
             emptyHint.setText("欢迎使用 AI Chat\n请输入消息开始对话");
-            emptyHint.setTextSize(16);
+            emptyHint.setTextSize(14);
             emptyHint.setTextColor(Color.parseColor("#999999"));
             emptyHint.setGravity(Gravity.CENTER);
             emptyHint.setPadding(0, 40, 0, 40);
@@ -287,7 +299,6 @@ public class MainActivity extends Activity {
         for (ChatMessage msg : messages) {
             boolean isUser = msg.getRole().equals("user");
 
-            // 每条消息的外层容器
             LinearLayout wrapper = new LinearLayout(this);
             wrapper.setOrientation(LinearLayout.VERTICAL);
             wrapper.setLayoutParams(new LinearLayout.LayoutParams(
@@ -295,52 +306,81 @@ public class MainActivity extends Activity {
                     ViewGroup.LayoutParams.WRAP_CONTENT
             ));
 
-            // 消息气泡
-            TextView bubble = new TextView(this);
-            bubble.setText(msg.getContent());
-            bubble.setTextSize(16);
-            bubble.setPadding(16, 12, 16, 12);
-            bubble.setMaxWidth((int) (getResources().getDisplayMetrics().widthPixels * 0.75));
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setLayoutParams(new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            ));
 
-            // 设置气泡样式
-            GradientDrawable drawable = new GradientDrawable();
-            drawable.setCornerRadius(16);
             if (isUser) {
-                drawable.setColor(Color.parseColor("#007AFF"));
-                bubble.setTextColor(Color.WHITE);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                );
-                params.gravity = Gravity.END;
-                params.setMargins(40, 8, 0, 8);
-                bubble.setLayoutParams(params);
+                row.setGravity(Gravity.END);
+                TextView bubble = createBubble(msg.getContent(), true);
+                row.addView(bubble);
+                TextView avatar = createAvatar("我", true);
+                row.addView(avatar);
             } else {
-                drawable.setColor(Color.parseColor("#E5E5EA"));
-                bubble.setTextColor(Color.BLACK);
-                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                );
-                params.gravity = Gravity.START;
-                params.setMargins(0, 8, 40, 8);
-                bubble.setLayoutParams(params);
+                row.setGravity(Gravity.START);
+                TextView avatar = createAvatar("AI", false);
+                row.addView(avatar);
+                TextView bubble = createBubble(msg.getContent(), false);
+                row.addView(bubble);
             }
-            bubble.setBackground(drawable);
 
-            wrapper.addView(bubble);
+            wrapper.addView(row);
             chatContainer.addView(wrapper);
         }
 
         scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (tvStatus != null) {
-            tvStatus.setText(getStatusText());
+    private TextView createBubble(String text, boolean isUser) {
+        TextView bubble = new TextView(this);
+        bubble.setText(text);
+        bubble.setTextSize(14);
+        bubble.setPadding(12, 8, 12, 8);
+        bubble.setMaxWidth((int) (getResources().getDisplayMetrics().widthPixels * 0.7));
+
+        GradientDrawable drawable = new GradientDrawable();
+        drawable.setCornerRadius(16);
+        if (isUser) {
+            drawable.setColor(Color.parseColor("#007AFF"));
+            bubble.setTextColor(Color.WHITE);
+        } else {
+            drawable.setColor(Color.parseColor("#E5E5EA"));
+            bubble.setTextColor(Color.BLACK);
         }
+        bubble.setBackground(drawable);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        params.setMargins(isUser ? 30 : 0, 4, isUser ? 0 : 30, 4);
+        bubble.setLayoutParams(params);
+
+        return bubble;
+    }
+
+    private TextView createAvatar(String label, boolean isUser) {
+        TextView avatar = new TextView(this);
+        avatar.setText(label);
+        avatar.setTextSize(12);
+        avatar.setTextColor(Color.WHITE);
+        avatar.setGravity(Gravity.CENTER);
+        avatar.setPadding(4, 4, 4, 4);
+
+        GradientDrawable circle = new GradientDrawable();
+        circle.setShape(GradientDrawable.OVAL);
+        circle.setColor(isUser ? Color.parseColor("#007AFF") : Color.parseColor("#34C759"));
+        avatar.setBackground(circle);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(28, 28);
+        params.setMargins(isUser ? 4 : 0, 0, isUser ? 0 : 4, 0);
+        avatar.setLayoutParams(params);
+
+        return avatar;
     }
 
     @Override
