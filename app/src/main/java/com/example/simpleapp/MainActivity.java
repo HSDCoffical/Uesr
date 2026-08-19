@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
 import android.widget.Button;
@@ -73,7 +74,8 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getWindow().setStatusBarColor(Color.TRANSPARENT);
         }
-themeHelper = new ThemeHelper(this);
+
+        themeHelper = new ThemeHelper(this);
         settingsHelper = new SettingsHelper(this);
         apiHelper = new ApiHelper();
         bgAlpha = themeHelper.getBgAlpha();
@@ -94,18 +96,15 @@ themeHelper = new ThemeHelper(this);
         }
         mainLayout.addView(bgImage);
 
-        // 内容层（不再需要全屏遮罩）
         FrameLayout contentLayer = new FrameLayout(this);
         contentLayer.setLayoutParams(new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
         ));
 
-        // 构建聊天UI（包含顶部栏）
         LinearLayout chatUI = buildChatUI();
         contentLayer.addView(chatUI);
 
-        // 添加菜单面板（半屏滑入）
         setupMenu(contentLayer);
 
         mainLayout.addView(contentLayer);
@@ -159,7 +158,8 @@ themeHelper = new ThemeHelper(this);
                 if (apiKey == null || apiKey.isEmpty()) {
                     throw new IllegalArgumentException("API Key 不能为空");
                 }
-apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallback() {
+
+                apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallback() {
                     @Override
                     public void onSuccess(String response) {
                         runOnUiThread(() -> {
@@ -208,18 +208,17 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
     private LinearLayout buildChatUI() {
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
-        main.setPadding(16, 40, 16, 12);
+        main.setPadding(16, 0, 16, 12); // 顶部填充为0，紧贴状态栏
 
-        // 顶部栏（毛玻璃效果，只覆盖这一行）
+        // 顶部栏（毛玻璃效果）
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        topBar.setPadding(16, 16, 16, 12); // 增加顶部内边距使文字下移
+        topBar.setPadding(16, 20, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
-        // 毛玻璃背景：半透明白色/深色，圆角
         GradientDrawable topBg = new GradientDrawable();
         topBg.setCornerRadius(20);
         if (themeHelper.isDarkMode()) {
@@ -236,15 +235,14 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
         } else {
             tvStatus.setText(modelName);
         }
-        tvStatus.setTextSize(24);
+        tvStatus.setTextSize(18); // 字体缩小
         tvStatus.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
 
-        // “三”菜单按钮
         Button btnMenu = new Button(this);
         btnMenu.setText("☰");
-        btnMenu.setTextSize(24);
+        btnMenu.setTextSize(20);
         btnMenu.setBackground(null);
         btnMenu.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         btnMenu.setPadding(8, 0, 8, 0);
@@ -253,7 +251,6 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
 
         main.addView(topBar);
 
-        // 聊天容器
         scrollView = new ScrollView(this);
         scrollView.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -271,7 +268,7 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
         // 输入区域（液态玻璃）
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
-        inputLayout.setPadding(8, 8, 8, 8);
+        inputLayout.setPadding(8, 4, 8, 4); // 垂直间距从8减少到4
 
         GradientDrawable glass = new GradientDrawable();
         glass.setCornerRadius(24);
@@ -315,9 +312,8 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
 
         return main;
     }
-// 设置菜单
+
     private void setupMenu(FrameLayout parent) {
-        // 半透明背景容器（点击关闭菜单）
         menuContainer = new FrameLayout(this);
         menuContainer.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -327,7 +323,6 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
         menuContainer.setVisibility(View.GONE);
         menuContainer.setOnClickListener(v -> closeMenu());
 
-        // 菜单面板（右侧滑入）
         menuPanel = new LinearLayout(this);
         menuPanel.setOrientation(LinearLayout.VERTICAL);
         menuPanel.setGravity(Gravity.TOP | Gravity.END);
@@ -341,7 +336,6 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
         menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
         menuPanel.setPadding(20, 40, 20, 20);
 
-        // 菜单项：设置
         Button menuSettings = new Button(this);
         menuSettings.setText("设置");
         menuSettings.setTextSize(18);
@@ -356,7 +350,6 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
         });
         menuPanel.addView(menuSettings);
 
-        // 菜单项：清空
         Button menuClear = new Button(this);
         menuClear.setText("清空");
         menuClear.setTextSize(18);
@@ -373,7 +366,6 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
         });
         menuPanel.addView(menuClear);
 
-        // 关闭按钮（可选，点击面板空白也可关闭）
         View closeArea = new View(this);
         closeArea.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -398,7 +390,6 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
     private void openMenu() {
         if (menuContainer == null) return;
         menuContainer.setVisibility(View.VISIBLE);
-        // 从右侧滑入动画
         TranslateAnimation slideIn = new TranslateAnimation(
                 Animation.RELATIVE_TO_SELF, 1.0f,
                 Animation.RELATIVE_TO_SELF, 0.0f,
@@ -406,13 +397,13 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
                 Animation.RELATIVE_TO_SELF, 0.0f
         );
         slideIn.setDuration(300);
+        slideIn.setInterpolator(new AccelerateDecelerateInterpolator());
         menuPanel.startAnimation(slideIn);
         isMenuOpen = true;
     }
 
     private void closeMenu() {
         if (menuContainer == null) return;
-        // 从左侧滑出（向右侧移出）
         TranslateAnimation slideOut = new TranslateAnimation(
                 Animation.RELATIVE_TO_SELF, 0.0f,
                 Animation.RELATIVE_TO_SELF, 1.0f,
@@ -420,6 +411,7 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
                 Animation.RELATIVE_TO_SELF, 0.0f
         );
         slideOut.setDuration(300);
+        slideOut.setInterpolator(new AccelerateDecelerateInterpolator());
         slideOut.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {}
@@ -433,7 +425,7 @@ apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallba
         menuPanel.startAnimation(slideOut);
         isMenuOpen = false;
     }
-
+}
     private void applyBackground() {
         Bitmap bg = themeHelper.getBackground();
         if (bg != null) {
