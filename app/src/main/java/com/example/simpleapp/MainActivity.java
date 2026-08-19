@@ -268,12 +268,12 @@ public class MainActivity extends Activity {
 
         Button btnMenu = new Button(this);
         btnMenu.setText("☰");
-        btnMenu.setTextSize(24); // 放大
-        btnMenu.setTypeface(Typeface.DEFAULT_BOLD); // 加粗
+        btnMenu.setTextSize(24);
+        btnMenu.setTypeface(Typeface.DEFAULT_BOLD);
         btnMenu.setBackground(null);
         btnMenu.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        // 左边距增加，让按钮向右移动
-        btnMenu.setPadding(24, 0, 8, 0);
+        // 左边距增加，让按钮再向右移动
+        btnMenu.setPadding(32, 0, 8, 0);
         btnMenu.setOnClickListener(v -> toggleMenu());
         topBar.addView(btnMenu);
 
@@ -310,7 +310,8 @@ public class MainActivity extends Activity {
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(16, 7, 16, 7);
+        // 输入框恢复之前大小（padding从7改为12）
+        etInput.setPadding(16, 12, 16, 12);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
         etInput.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
@@ -320,14 +321,14 @@ public class MainActivity extends Activity {
         btnSend.setText("发送");
         btnSend.setBackgroundColor(Color.parseColor("#007AFF"));
         btnSend.setTextColor(Color.WHITE);
-        // 发送按钮整体缩小（宽68dp，高32dp）
+        // 仅缩小发送按钮（宽68dp，高32dp）
         LinearLayout.LayoutParams sendParams = new LinearLayout.LayoutParams(
                 dpToPx(68),
                 dpToPx(32)
         );
         btnSend.setLayoutParams(sendParams);
         btnSend.setPadding(0, 0, 0, 0);
-        btnSend.setTextSize(12); // 文字也缩小一点
+        btnSend.setTextSize(12);
         GradientDrawable btnShape = new GradientDrawable();
         btnShape.setCornerRadius(16);
         btnShape.setColor(Color.parseColor("#007AFF"));
@@ -368,35 +369,25 @@ public class MainActivity extends Activity {
     menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
     menuPanel.setPadding(20, 80, 20, 20);
 
-    Button menuSettings = new Button(this);
-    menuSettings.setText("设置");
-    menuSettings.setTextSize(18);
-    menuSettings.setBackground(null);
-    menuSettings.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-    menuSettings.setGravity(Gravity.CENTER);
-    menuSettings.setPadding(16, 16, 16, 16);
-    menuSettings.setOnClickListener(v -> {
+    // 菜单项1：设置（左边文字，右边方向键）
+    LinearLayout itemSettings = createMenuItem("设置");
+    itemSettings.setOnClickListener(v -> {
         closeMenu();
         Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
         startActivity(intent);
     });
-    menuPanel.addView(menuSettings);
+    menuPanel.addView(itemSettings);
 
-    Button menuClear = new Button(this);
-    menuClear.setText("清空");
-    menuClear.setTextSize(18);
-    menuClear.setBackground(null);
-    menuClear.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-    menuClear.setGravity(Gravity.CENTER);
-    menuClear.setPadding(16, 16, 16, 16);
-    menuClear.setOnClickListener(v -> {
+    // 菜单项2：清空（左边文字，右边方向键）
+    LinearLayout itemClear = createMenuItem("清空");
+    itemClear.setOnClickListener(v -> {
         closeMenu();
         messages.clear();
         saveHistory();
         renderMessages();
         Toast.makeText(MainActivity.this, "对话已清空", Toast.LENGTH_SHORT).show();
     });
-    menuPanel.addView(menuClear);
+    menuPanel.addView(itemClear);
 
     View closeArea = new View(this);
     closeArea.setLayoutParams(new LinearLayout.LayoutParams(
@@ -409,6 +400,41 @@ public class MainActivity extends Activity {
 
     menuContainer.addView(menuPanel);
     parent.addView(menuContainer);
+}
+
+// 创建菜单项（左边文字 + 右边方向键）
+private LinearLayout createMenuItem(String text) {
+    LinearLayout item = new LinearLayout(this);
+    item.setOrientation(LinearLayout.HORIZONTAL);
+    item.setGravity(Gravity.CENTER_VERTICAL);
+    item.setPadding(16, 20, 16, 20);
+    item.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+    ));
+    // 添加分割线（底部细线）
+    GradientDrawable divider = new GradientDrawable();
+    divider.setColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
+    divider.setSize(0, 1);
+    item.setBackground(divider);
+
+    // 左边文字
+    TextView label = new TextView(this);
+    label.setText(text);
+    label.setTextSize(18);
+    label.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+    label.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
+    item.addView(label);
+
+    // 右边方向键 ">"
+    TextView arrow = new TextView(this);
+    arrow.setText(">");
+    arrow.setTextSize(18);
+    arrow.setTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
+    arrow.setPadding(16, 0, 0, 0);
+    item.addView(arrow);
+
+    return item;
 }
 
 private void toggleMenu() {
