@@ -482,6 +482,15 @@ public class SettingsActivity extends Activity {
         alphaRow.setOrientation(LinearLayout.HORIZONTAL);
         alphaRow.setGravity(Gravity.CENTER_VERTICAL);
 
+        // 将 etAlpha 声明为 final 并放在这里（在监听器之前）
+        final EditText etAlpha = new EditText(this);
+        etAlpha.setInputType(InputType.TYPE_CLASS_NUMBER);
+        etAlpha.setText(String.valueOf(currentAlpha));
+        etAlpha.setMinWidth(60);
+        etAlpha.setGravity(Gravity.CENTER);
+        etAlpha.setPadding(8, 4, 8, 4);
+        etAlpha.setBackgroundResource(android.R.drawable.editbox_background);
+
         SeekBar seekBar = new SeekBar(this);
         seekBar.setMax(100);
         seekBar.setProgress(currentAlpha);
@@ -499,15 +508,11 @@ public class SettingsActivity extends Activity {
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
         });
         alphaRow.addView(seekBar);
+        alphaRow.addView(etAlpha);
 
-        // 数值输入
-        final EditText etAlpha = new EditText(this);
-        etAlpha.setInputType(InputType.TYPE_CLASS_NUMBER);
-        etAlpha.setText(String.valueOf(currentAlpha));
-        etAlpha.setMinWidth(60);
-        etAlpha.setGravity(Gravity.CENTER);
-        etAlpha.setPadding(8, 4, 8, 4);
-        etAlpha.setBackgroundResource(android.R.drawable.editbox_background);
+        contentContainer.addView(alphaRow);
+
+        // 数值输入框焦点丢失时同步
         etAlpha.setOnFocusChangeListener((v, hasFocus) -> {
             if (!hasFocus) {
                 try {
@@ -520,9 +525,6 @@ public class SettingsActivity extends Activity {
                 } catch (NumberFormatException ignored) {}
             }
         });
-        alphaRow.addView(etAlpha);
-
-        contentContainer.addView(alphaRow);
 
         // 状态显示
         TextView status = new TextView(this);
