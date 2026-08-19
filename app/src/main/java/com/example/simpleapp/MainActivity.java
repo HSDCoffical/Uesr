@@ -160,6 +160,8 @@ public class MainActivity extends Activity {
                     Toast.makeText(this, "请先进入设置配置 API", Toast.LENGTH_LONG).show();
                     return;
                 }
+
+                // 添加用户消息
                 messages.add(new ChatMessage("user", input));
                 saveHistory();
                 renderMessages();
@@ -168,6 +170,7 @@ public class MainActivity extends Activity {
                 setLoading(true);
                 waitingForResponse = true;
 
+                // 超时检测
                 timeoutRunnable = () -> {
                     if (waitingForResponse) {
                         waitingForResponse = false;
@@ -191,6 +194,12 @@ public class MainActivity extends Activity {
                     throw new IllegalArgumentException("API Key 不能为空");
                 }
 
+                // 添加占位消息用于流式更新
+                messages.add(new ChatMessage("ai", ""));
+                final int aiMsgIndex = messages.size() - 1;
+                saveHistory();
+                renderMessages();
+
                 apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallback() {
                     @Override
                     public void onSuccess(String response) {
@@ -200,10 +209,24 @@ public class MainActivity extends Activity {
                                 timeoutHandler.removeCallbacks(timeoutRunnable);
                             }
                             setLoading(false);
-                            messages.add(new ChatMessage("ai", response));
-                            saveHistory();
-                            renderMessages();
-                            scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+                            if (!messages.isEmpty()) {
+                                messages.set(aiMsgIndex, new ChatMessage("ai", response));
+                                saveHistory();
+                                renderMessages();
+                                scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onChunk(String chunk) {
+                        runOnUiThread(() -> {
+                            if (!messages.isEmpty()) {
+                                String current = messages.get(aiMsgIndex).getContent();
+                                messages.set(aiMsgIndex, new ChatMessage("ai", current + chunk));
+                                renderMessages();
+                                scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+                            }
                         });
                     }
 
@@ -215,9 +238,11 @@ public class MainActivity extends Activity {
                                 timeoutHandler.removeCallbacks(timeoutRunnable);
                             }
                             setLoading(false);
-                            messages.add(new ChatMessage("ai", "[错误] " + error));
-                            saveHistory();
-                            renderMessages();
+                            if (!messages.isEmpty()) {
+                                messages.set(aiMsgIndex, new ChatMessage("ai", "[错误] " + error));
+                                saveHistory();
+                                renderMessages();
+                            }
                             Toast.makeText(MainActivity.this, error, Toast.LENGTH_LONG).show();
                         });
                     }
@@ -366,9 +391,10 @@ public class MainActivity extends Activity {
     panelParams.gravity = Gravity.END;
     menuPanel.setLayoutParams(panelParams);
     menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
-    menuPanel.setPadding(20, 80, 20, 20);
+    // 顶部内边距从 80 改为 100，使菜单项下移
+    menuPanel.setPadding(20, 140, 20, 20);
 
-    // 菜单项1：设置（小R角深色背景）
+    // 菜单项1：设置
     LinearLayout itemSettings = createMenuItem("设置");
     itemSettings.setOnClickListener(v -> {
         closeMenu();
@@ -386,7 +412,7 @@ public class MainActivity extends Activity {
     divider.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
     menuPanel.addView(divider);
 
-    // 菜单项2：清空（小R角深色背景）
+    // 菜单项2：清空
     LinearLayout itemClear = createMenuItem("清空");
     itemClear.setOnClickListener(v -> {
         closeMenu();
@@ -420,13 +446,12 @@ private LinearLayout createMenuItem(String text) {
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
     ));
-    // 小R角背景（圆角8dp）
+    // 小R角背景
     GradientDrawable bg = new GradientDrawable();
     bg.setCornerRadius(dpToPx(8));
     bg.setColor(themeHelper.isDarkMode() ? Color.parseColor("#66333333") : Color.parseColor("#88E0E0E0"));
     item.setBackground(bg);
 
-    // 左边文字
     TextView label = new TextView(this);
     label.setText(text);
     label.setTextSize(18);
@@ -434,7 +459,6 @@ private LinearLayout createMenuItem(String text) {
     label.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
     item.addView(label);
 
-    // 右边方向键 ">"
     TextView arrow = new TextView(this);
     arrow.setText(">");
     arrow.setTextSize(18);
