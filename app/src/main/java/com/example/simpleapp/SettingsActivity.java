@@ -22,6 +22,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
+import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -417,7 +418,7 @@ public class SettingsActivity extends Activity {
         switchDark.setOnCheckedChangeListener((buttonView, isChecked) -> {
             darkMode = isChecked;
             themeHelper.setDarkMode(darkMode);
-            recreate(); // 重启应用主题
+            recreate();
         });
         themeRow.addView(switchDark);
         contentContainer.addView(themeRow);
@@ -468,6 +469,62 @@ public class SettingsActivity extends Activity {
 
         contentContainer.addView(bgRow);
 
+        // 背景透明度控制
+        TextView alphaLabel = new TextView(this);
+        int currentAlpha = themeHelper.getBgAlpha();
+        alphaLabel.setText("背景透明度 (" + currentAlpha + "%)");
+        alphaLabel.setTextSize(14);
+        alphaLabel.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
+        alphaLabel.setPadding(0, 16, 0, 8);
+        contentContainer.addView(alphaLabel);
+
+        LinearLayout alphaRow = new LinearLayout(this);
+        alphaRow.setOrientation(LinearLayout.HORIZONTAL);
+        alphaRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        SeekBar seekBar = new SeekBar(this);
+        seekBar.setMax(100);
+        seekBar.setProgress(currentAlpha);
+        seekBar.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    themeHelper.setBgAlpha(progress);
+                    alphaLabel.setText("背景透明度 (" + progress + "%)");
+                    etAlpha.setText(String.valueOf(progress));
+                }
+            }
+            @Override public void onStartTrackingTouch(SeekBar seekBar) {}
+            @Override public void onStopTrackingTouch(SeekBar seekBar) {}
+        });
+        alphaRow.addView(seekBar);
+
+        // 数值输入
+        final EditText etAlpha = new EditText(this);
+        etAlpha.setInputType(InputType.TYPE_CLASS_NUMBER);
+        etAlpha.setText(String.valueOf(currentAlpha));
+        etAlpha.setMinWidth(60);
+        etAlpha.setGravity(Gravity.CENTER);
+        etAlpha.setPadding(8, 4, 8, 4);
+        etAlpha.setBackgroundResource(android.R.drawable.editbox_background);
+        etAlpha.setOnFocusChangeListener((v, hasFocus) -> {
+            if (!hasFocus) {
+                try {
+                    int val = Integer.parseInt(etAlpha.getText().toString());
+                    if (val < 0) val = 0;
+                    if (val > 100) val = 100;
+                    themeHelper.setBgAlpha(val);
+                    seekBar.setProgress(val);
+                    alphaLabel.setText("背景透明度 (" + val + "%)");
+                } catch (NumberFormatException ignored) {}
+            }
+        });
+        alphaRow.addView(etAlpha);
+
+        contentContainer.addView(alphaRow);
+
+        // 状态显示
         TextView status = new TextView(this);
         status.setText(themeHelper.hasBackground() ? "当前已设置自定义背景" : "当前未设置背景");
         status.setTextSize(12);
