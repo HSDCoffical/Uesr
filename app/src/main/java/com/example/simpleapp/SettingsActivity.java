@@ -47,6 +47,7 @@ public class SettingsActivity extends Activity {
     private ThemeHelper themeHelper;
     private Button tabAi, tabTheme, tabAbout;
     private boolean darkMode = false;
+    private Button fab;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,8 +104,8 @@ public class SettingsActivity extends Activity {
         scrollView.addView(contentContainer);
         frameContainer.addView(scrollView);
 
-        // 悬浮添加按钮（仅管理AI页面显示，我们动态控制）
-        final Button fab = new Button(this);
+        // 悬浮添加按钮（仅管理AI页面显示）
+        fab = new Button(this);
         fab.setText("+");
         fab.setTextSize(28);
         fab.setBackgroundColor(Color.parseColor("#007AFF"));
@@ -122,13 +123,13 @@ public class SettingsActivity extends Activity {
         fabParams.setMargins(0, 0, 24, 24);
         fab.setLayoutParams(fabParams);
         fab.setOnClickListener(v -> showAddConfigDialog());
-        fab.setVisibility(View.GONE); // 默认隐藏
+        fab.setVisibility(View.GONE);
         frameContainer.addView(fab);
 
         mainLayout.addView(frameContainer);
         setContentView(mainLayout);
 
-        // 默认显示管理AI，并显示悬浮按钮
+        // 默认显示管理AI，显示FAB
         showAiManagement();
         fab.setVisibility(View.VISIBLE);
 
@@ -168,7 +169,7 @@ public class SettingsActivity extends Activity {
         tab.setTextColor(Color.WHITE);
     }
 
-    // ---------- 管理AI（与之前相同，但移除原来的FAB） ----------
+    // ---------- 管理AI ----------
     private void showAiManagement() {
         contentContainer.removeAllViews();
 
@@ -183,7 +184,6 @@ public class SettingsActivity extends Activity {
             LinearLayout item = createConfigItem(config);
             contentContainer.addView(item);
         }
-        // 不再添加FAB，由外部FAB控制
     }
 
     private LinearLayout createConfigItem(ApiConfig config) {
@@ -258,11 +258,290 @@ public class SettingsActivity extends Activity {
         return item;
     }
 
-    // ---------- 新增配置对话框、删除、数据持久化等方法（与之前一致，此处省略，但实际需要包含） ----------
-    // 由于篇幅，省略重复方法，但最终代码中需完整包含。
-    // 实际提供时，我会将完整方法包含进去。
-    // 为了节省空间，此处简写，但最终答案中会提供完整文件。
+    private void showAddConfigDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("新增AI配置");
 
-    // 这里只展示关键修改部分，其他方法保持不变
-    // 实际回复时提供完整文件，确保编译通过
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(32, 16, 32, 16);
+
+        final EditText etName = new EditText(this);
+        etName.setHint("配置名称（如：Agnes）");
+        layout.addView(etName);
+
+        final EditText etBaseUrl = new EditText(this);
+        etBaseUrl.setHint("Base URL");
+        layout.addView(etBaseUrl);
+
+        final EditText etApiKey = new EditText(this);
+        etApiKey.setHint("API Key");
+        etApiKey.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        layout.addView(etApiKey);
+
+        final EditText etModel = new EditText(this);
+        etModel.setHint("模型名称");
+        layout.addView(etModel);
+
+        builder.setView(layout);
+        builder.setPositiveButton("保存", (dialog, which) -> {
+            String name = etName.getText().toString().trim();
+            String baseUrl = etBaseUrl.getText().toString().trim();
+            String apiKey = etApiKey.getText().toString().trim();
+            String model = etModel.getText().toString().trim();
+            if (name.isEmpty() || baseUrl.isEmpty() || apiKey.isEmpty() || model.isEmpty()) {
+                Toast.makeText(this, "请填写完整信息", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            String id = UUID.randomUUID().toString();
+            ApiConfig newConfig = new ApiConfig(id, name, baseUrl, apiKey, model);
+            configs.add(newConfig);
+            saveConfigs();
+            if (configs.size() == 1) {
+                setCurrentConfig(id);
+            }
+            showAiManagement();
+            Toast.makeText(this, "配置已添加", Toast.LENGTH_SHORT).show();
+        });
+        builder.setNegativeButton("取消", null);
+        builder.show();
+    }
+
+    private void confirmDelete(String id) {
+        new AlertDialog.Builder(this)
+                .setTitle("删除配置")
+                .setMessage("确定要删除此配置吗？")
+                .setPositiveButton("删除", (dialog, which) -> {
+                    configs.removeIf(c -> c.getId().equals(id));
+                    if (currentConfigId != null && currentConfigId.equals(id)) {
+                        currentConfigId = null;
+                        if (!configs.isEmpty()) {
+                            setCurrentConfig(configs.get(0).getId());
+                        }
+                    }
+                    saveConfigs();
+                    showAiManagement();
+                    Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("取消", null)
+                .show();
+    }
+
+    private String getCurrentConfigName() {
+        if (currentConfigId == null) return "未配置";
+        for (ApiConfig c : configs) {
+            if (c.getId().equals(currentConfigId)) {
+                return c.getName();
+            }
+        }
+        return "未配置";
+    }
+
+    // ---------- 数据持久化 ----------
+    private void loadConfigs() {
+        SharedPreferences prefs = getSharedPreferences("settings_prefs", MODE_PRIVATE);
+        String json = prefs.getString("api_configs", "");
+        if (!json.isEmpty()) {
+            Type type = new TypeToken<List<ApiConfig>>() {}.getType();
+            List<ApiConfig> loaded = gson.fromJson(json, type);
+            if (loaded != null) {
+                configs = loaded;
+            }
+        }
+        currentConfigId = prefs.getString("current_config_id", null);
+        if (currentConfigId != null) {
+            boolean exists = false;
+            for (ApiConfig c : configs) {
+                if (c.getId().equals(currentConfigId)) {
+                    exists = true;
+                    break;
+                }
+            }
+            if (!exists) currentConfigId = null;
+        }
+        if (currentConfigId == null && !configs.isEmpty()) {
+            setCurrentConfig(configs.get(0).getId());
+            saveConfigs();
+        }
+    }
+
+    private void saveConfigs() {
+        SharedPreferences prefs = getSharedPreferences("settings_prefs", MODE_PRIVATE);
+        String json = gson.toJson(configs);
+        prefs.edit()
+                .putString("api_configs", json)
+                .putString("current_config_id", currentConfigId)
+                .apply();
+        updateSettingsHelper();
+    }
+
+    private void setCurrentConfig(String id) {
+        currentConfigId = id;
+        saveConfigs();
+    }
+
+    private void updateSettingsHelper() {
+        if (currentConfigId == null) return;
+        ApiConfig current = null;
+        for (ApiConfig c : configs) {
+            if (c.getId().equals(currentConfigId)) {
+                current = c;
+                break;
+            }
+        }
+        if (current != null) {
+            SettingsHelper helper = new SettingsHelper(this);
+            helper.saveSettings(current.getBaseUrl(), current.getApiKey(), current.getModel());
+        }
+    }
+
+    // ---------- 管理软件 ----------
+    private void showThemeManagement() {
+        contentContainer.removeAllViews();
+
+        // 深色模式 - 使用 Switch
+        LinearLayout themeRow = new LinearLayout(this);
+        themeRow.setOrientation(LinearLayout.HORIZONTAL);
+        themeRow.setGravity(Gravity.CENTER_VERTICAL);
+        themeRow.setPadding(0, 0, 0, 20);
+
+        TextView themeLabel = new TextView(this);
+        themeLabel.setText("深色模式");
+        themeLabel.setTextSize(16);
+        themeLabel.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
+        themeLabel.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+        themeRow.addView(themeLabel);
+
+        Switch switchDark = new Switch(this);
+        switchDark.setChecked(darkMode);
+        switchDark.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            darkMode = isChecked;
+            themeHelper.setDarkMode(darkMode);
+            recreate(); // 重启应用主题
+        });
+        themeRow.addView(switchDark);
+        contentContainer.addView(themeRow);
+
+        // 自定义背景
+        TextView bgLabel = new TextView(this);
+        bgLabel.setText("自定义背景");
+        bgLabel.setTextSize(16);
+        bgLabel.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
+        bgLabel.setPadding(0, 16, 0, 8);
+        contentContainer.addView(bgLabel);
+
+        LinearLayout bgRow = new LinearLayout(this);
+        bgRow.setOrientation(LinearLayout.HORIZONTAL);
+        bgRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        Button uploadBtn = new Button(this);
+        uploadBtn.setText("选择图片");
+        uploadBtn.setAllCaps(false);
+        uploadBtn.setTextSize(14);
+        uploadBtn.setBackgroundColor(Color.parseColor("#E0E0E0"));
+        uploadBtn.setTextColor(Color.BLACK);
+        uploadBtn.setPadding(16, 8, 16, 8);
+        GradientDrawable upShape = new GradientDrawable();
+        upShape.setCornerRadius(16);
+        upShape.setColor(Color.parseColor("#E0E0E0"));
+        uploadBtn.setBackground(upShape);
+        uploadBtn.setOnClickListener(v -> checkPermissionAndPickImage());
+        bgRow.addView(uploadBtn);
+
+        Button clearBtn = new Button(this);
+        clearBtn.setText("清除");
+        clearBtn.setAllCaps(false);
+        clearBtn.setTextSize(14);
+        clearBtn.setBackgroundColor(Color.parseColor("#E0E0E0"));
+        clearBtn.setTextColor(Color.BLACK);
+        clearBtn.setPadding(16, 8, 16, 8);
+        GradientDrawable clrShape = new GradientDrawable();
+        clrShape.setCornerRadius(16);
+        clrShape.setColor(Color.parseColor("#E0E0E0"));
+        clearBtn.setBackground(clrShape);
+        clearBtn.setOnClickListener(v -> {
+            themeHelper.saveBackground(null);
+            Toast.makeText(this, "背景已清除", Toast.LENGTH_SHORT).show();
+            showThemeManagement();
+        });
+        bgRow.addView(clearBtn);
+
+        contentContainer.addView(bgRow);
+
+        TextView status = new TextView(this);
+        status.setText(themeHelper.hasBackground() ? "当前已设置自定义背景" : "当前未设置背景");
+        status.setTextSize(12);
+        status.setTextColor(darkMode ? Color.LTGRAY : Color.GRAY);
+        status.setPadding(0, 8, 0, 0);
+        contentContainer.addView(status);
+    }
+
+    // ---------- 权限与图片选择 ----------
+    private void checkPermissionAndPickImage() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.READ_MEDIA_IMAGES},
+                        PERMISSION_REQUEST);
+            } else {
+                pickImage();
+            }
+        } else {
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        PERMISSION_REQUEST);
+            } else {
+                pickImage();
+            }
+        }
+    }
+
+    private void pickImage() {
+        Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(intent, PICK_IMAGE_REQUEST);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                                           int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                pickImage();
+            } else {
+                Toast.makeText(this, "需要存储权限才能选择图片", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            try {
+                Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+                themeHelper.saveBackground(bitmap);
+                Toast.makeText(this, "背景已更新", Toast.LENGTH_SHORT).show();
+                showThemeManagement();
+            } catch (IOException e) {
+                e.printStackTrace();
+                Toast.makeText(this, "图片加载失败", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    // ---------- 关于软件 ----------
+    private void showAbout() {
+        contentContainer.removeAllViews();
+
+        TextView about = new TextView(this);
+        about.setText("Simple AI Chat\n版本 1.0\n\n基于 OpenCode / Agnes 等 API 开发\n\n声明：本应用仅供学习交流使用。\n所有AI回复由第三方API生成。\n\n开发者：凉数中");
+        about.setTextSize(14);
+        about.setTextColor(darkMode ? Color.WHITE : Color.BLACK);
+        about.setGravity(Gravity.CENTER);
+        about.setPadding(16, 40, 16, 40);
+        contentContainer.addView(about);
+    }
 }
