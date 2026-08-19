@@ -115,7 +115,7 @@ public class SettingsActivity extends Activity {
         fab.setText("+");
         fab.setTextSize(28);
         fab.setTextColor(Color.WHITE);
-        // 关键修复：设置固定宽高，且相等，形成正圆
+        // 固定宽高，且相等，形成正圆
         int fabSize = dpToPx(56);
         FrameLayout.LayoutParams fabParams = new FrameLayout.LayoutParams(fabSize, fabSize);
         fabParams.gravity = Gravity.BOTTOM | Gravity.END;
@@ -194,9 +194,9 @@ private LinearLayout createConfigItem(ApiConfig config) {
     LinearLayout item = new LinearLayout(this);
     item.setOrientation(LinearLayout.HORIZONTAL);
     item.setGravity(Gravity.CENTER_VERTICAL);
-    // 美化卡片：圆角+阴影效果
+    // 卡片：四方R角（四个角圆角20dp）
     GradientDrawable card = new GradientDrawable();
-    card.setCornerRadius(dpToPx(10));
+    card.setCornerRadius(dpToPx(20)); // 四方R角 20dp
     card.setColor(darkMode ? Color.parseColor("#424242") : Color.WHITE);
     card.setStroke(1, darkMode ? Color.parseColor("#666666") : Color.parseColor("#DDDDDD"));
     item.setBackground(card);
@@ -398,7 +398,7 @@ private String getCurrentConfigName() {
         }
     }
 
-    // ---------- 管理软件（保留原有内容） ----------
+    // ---------- 管理软件 ----------
     private void showThemeManagement() {
         contentContainer.removeAllViews();
 
