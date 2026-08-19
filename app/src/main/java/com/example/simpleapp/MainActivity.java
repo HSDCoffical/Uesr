@@ -65,6 +65,16 @@ public class MainActivity extends Activity {
     private LinearLayout menuPanel;
     private boolean isMenuOpen = false;
 
+    // 获取状态栏高度
+    private int getStatusBarHeight() {
+        int result = 0;
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            result = getResources().getDimensionPixelSize(resourceId);
+        }
+        return result;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -95,6 +105,16 @@ public class MainActivity extends Activity {
             bgImage.setBackgroundColor(Color.parseColor("#F5F5F5"));
         }
         mainLayout.addView(bgImage);
+
+        // 状态栏白色背景（遮挡背景图顶部）
+        int statusBarHeight = getStatusBarHeight();
+        View statusBarView = new View(this);
+        statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                statusBarHeight
+        ));
+        statusBarView.setBackgroundColor(Color.WHITE);
+        mainLayout.addView(statusBarView);
 
         FrameLayout contentLayer = new FrameLayout(this);
         contentLayer.setLayoutParams(new FrameLayout.LayoutParams(
@@ -213,7 +233,8 @@ public class MainActivity extends Activity {
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        topBar.setPadding(16, 20, 16, 16);
+        // 状态栏高度 + 8dp 下移，32 约等于状态栏高度（24dp）+ 8dp 间距
+        topBar.setPadding(16, 32, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
