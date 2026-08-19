@@ -341,7 +341,7 @@ public class MainActivity extends Activity {
             bgImage.setAlpha(255);
         }
     }
-
+}
     @Override
     protected void onResume() {
         super.onResume();
