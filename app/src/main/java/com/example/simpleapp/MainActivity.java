@@ -13,10 +13,12 @@ import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -806,10 +808,22 @@ private void closeMenu() {
     // ----- 导出对话功能 + 权限处理 -----
     private void checkAndExport() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        PERMISSION_REQUEST_WRITE);
+            int permission = checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            if (permission != PackageManager.PERMISSION_GRANTED) {
+                if (shouldShowRequestPermissionRationale(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    new AlertDialog.Builder(this)
+                            .setTitle("需要存储权限")
+                            .setMessage("导出对话需要存储权限，以便将文件保存到您的设备。")
+                            .setPositiveButton("确定", (dialog, which) -> {
+                                requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                                        PERMISSION_REQUEST_WRITE);
+                            })
+                            .setNegativeButton("取消", null)
+                            .show();
+                } else {
+                    requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            PERMISSION_REQUEST_WRITE);
+                }
                 return;
             }
         }
@@ -838,7 +852,6 @@ private void closeMenu() {
             sb.append("====================================\n");
             sb.append("—— 导出结束 ——");
 
-            // 保存到 Downloads 目录
             File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
             if (!dir.exists()) {
                 dir.mkdirs();
@@ -863,7 +876,20 @@ private void closeMenu() {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 exportChat();
             } else {
-                Toast.makeText(this, "需要存储权限才能导出对话", Toast.LENGTH_SHORT).show();
+                if (!shouldShowRequestPermissionRationale(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+                    new AlertDialog.Builder(this)
+                            .setTitle("权限被拒绝")
+                            .setMessage("您已永久拒绝存储权限，请在系统设置中手动开启。")
+                            .setPositiveButton("去设置", (dialog, which) -> {
+                                Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                intent.setData(Uri.parse("package:" + getPackageName()));
+                                startActivity(intent);
+                            })
+                            .setNegativeButton("取消", null)
+                            .show();
+                } else {
+                    Toast.makeText(this, "需要存储权限才能导出对话", Toast.LENGTH_SHORT).show();
+                }
             }
         }
     }
