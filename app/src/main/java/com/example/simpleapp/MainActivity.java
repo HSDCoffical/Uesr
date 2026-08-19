@@ -255,7 +255,7 @@ public class MainActivity extends Activity {
         } else {
             tvStatus.setText(modelName);
         }
-        tvStatus.setTextSize(18);
+        tvStatus.setTextSize(14);
         tvStatus.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
