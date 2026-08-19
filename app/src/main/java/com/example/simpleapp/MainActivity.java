@@ -240,17 +240,19 @@ public class MainActivity extends Activity {
         main.setOrientation(LinearLayout.VERTICAL);
         main.setPadding(16, 0, 16, 22);
 
+        // 顶部栏：现在放在白色状态栏区域内，直接紧贴顶部
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        // 上边距设为 状态栏高度*2 + 8dp，让内容在白色框下方
-        int topPadding = statusBarHeight * 2 + dpToPx(8);
+        // 上边距设为 状态栏高度 - 8dp（让内容紧贴白色框底部）
+        int topPadding = statusBarHeight - dpToPx(8);
+        if (topPadding < 0) topPadding = 0;
         topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
-        // 删除毛玻璃背景（不设置任何背景）
+        // 删除背景（完全透明）
 
         tvStatus = new TextView(this);
         String modelName = settingsHelper.getModel();
@@ -259,7 +261,7 @@ public class MainActivity extends Activity {
         } else {
             tvStatus.setText(modelName);
         }
-        tvStatus.setTextSize(14);
+        tvStatus.setTextSize(18); // 字体调大
         tvStatus.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
