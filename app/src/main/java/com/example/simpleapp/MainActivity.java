@@ -60,7 +60,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // 沉浸式状态栏
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
@@ -89,13 +88,11 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
-        // 内容层（半透明遮罩，让文字更清晰）
         FrameLayout contentLayer = new FrameLayout(this);
         contentLayer.setLayoutParams(new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
         ));
-        // 添加半透明遮罩，使文字清晰
         View maskView = new View(this);
         maskView.setLayoutParams(new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
@@ -104,7 +101,6 @@ public class MainActivity extends Activity {
         maskView.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#66FFFFFF") : Color.parseColor("#66FFFFFF"));
         contentLayer.addView(maskView);
 
-        // 构建聊天UI
         LinearLayout chatUI = buildChatUI();
         contentLayer.addView(chatUI);
 
@@ -211,7 +207,6 @@ public class MainActivity extends Activity {
         main.setOrientation(LinearLayout.VERTICAL);
         main.setPadding(16, 40, 16, 12);
 
-        // 顶部栏（模型名称 + 文字按钮）
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
@@ -257,7 +252,6 @@ public class MainActivity extends Activity {
 
         main.addView(topBar);
 
-        // 聊天容器
         scrollView = new ScrollView(this);
         scrollView.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -272,7 +266,6 @@ public class MainActivity extends Activity {
         scrollView.addView(chatContainer);
         main.addView(scrollView);
 
-        // 输入区域（液态玻璃效果）
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
         inputLayout.setPadding(8, 8, 8, 8);
@@ -337,7 +330,7 @@ public class MainActivity extends Activity {
             bgImage.setAlpha(255);
         }
     }
-}
+
     @Override
     protected void onResume() {
         super.onResume();
