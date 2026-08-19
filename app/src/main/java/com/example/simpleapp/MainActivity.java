@@ -16,6 +16,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
@@ -57,6 +59,11 @@ public class MainActivity extends Activity {
     private ImageView bgImage;
     private int bgAlpha = 100;
 
+    // 菜单相关
+    private FrameLayout menuContainer;
+    private LinearLayout menuPanel;
+    private boolean isMenuOpen = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -66,8 +73,7 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getWindow().setStatusBarColor(Color.TRANSPARENT);
         }
-
-        themeHelper = new ThemeHelper(this);
+themeHelper = new ThemeHelper(this);
         settingsHelper = new SettingsHelper(this);
         apiHelper = new ApiHelper();
         bgAlpha = themeHelper.getBgAlpha();
@@ -88,21 +94,19 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
+        // 内容层（不再需要全屏遮罩）
         FrameLayout contentLayer = new FrameLayout(this);
         contentLayer.setLayoutParams(new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
         ));
-        View maskView = new View(this);
-        maskView.setLayoutParams(new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-        ));
-        maskView.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#66FFFFFF") : Color.parseColor("#66FFFFFF"));
-        contentLayer.addView(maskView);
 
+        // 构建聊天UI（包含顶部栏）
         LinearLayout chatUI = buildChatUI();
         contentLayer.addView(chatUI);
+
+        // 添加菜单面板（半屏滑入）
+        setupMenu(contentLayer);
 
         mainLayout.addView(contentLayer);
         setContentView(mainLayout);
@@ -155,8 +159,7 @@ public class MainActivity extends Activity {
                 if (apiKey == null || apiKey.isEmpty()) {
                     throw new IllegalArgumentException("API Key 不能为空");
                 }
-
-                apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallback() {
+apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallback() {
                     @Override
                     public void onSuccess(String response) {
                         runOnUiThread(() -> {
@@ -207,10 +210,24 @@ public class MainActivity extends Activity {
         main.setOrientation(LinearLayout.VERTICAL);
         main.setPadding(16, 40, 16, 12);
 
+        // 顶部栏（毛玻璃效果，只覆盖这一行）
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        topBar.setPadding(0, 8, 0, 12);
+        topBar.setPadding(16, 16, 16, 12); // 增加顶部内边距使文字下移
+        topBar.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+        // 毛玻璃背景：半透明白色/深色，圆角
+        GradientDrawable topBg = new GradientDrawable();
+        topBg.setCornerRadius(20);
+        if (themeHelper.isDarkMode()) {
+            topBg.setColor(Color.parseColor("#AA222222"));
+        } else {
+            topBg.setColor(Color.parseColor("#CCFFFFFF"));
+        }
+        topBar.setBackground(topBg);
 
         tvStatus = new TextView(this);
         String modelName = settingsHelper.getModel();
@@ -224,34 +241,19 @@ public class MainActivity extends Activity {
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
 
-        Button btnSettings = new Button(this);
-        btnSettings.setText("设置");
-        btnSettings.setTextSize(16);
-        btnSettings.setBackground(null);
-        btnSettings.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnSettings.setPadding(8, 0, 8, 0);
-        btnSettings.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-            startActivity(intent);
-        });
-        topBar.addView(btnSettings);
-
-        Button btnClear = new Button(this);
-        btnClear.setText("清空");
-        btnClear.setTextSize(16);
-        btnClear.setBackground(null);
-        btnClear.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnClear.setPadding(8, 0, 8, 0);
-        btnClear.setOnClickListener(v -> {
-            messages.clear();
-            saveHistory();
-            renderMessages();
-            Toast.makeText(this, "对话已清空", Toast.LENGTH_SHORT).show();
-        });
-        topBar.addView(btnClear);
+        // “三”菜单按钮
+        Button btnMenu = new Button(this);
+        btnMenu.setText("☰");
+        btnMenu.setTextSize(24);
+        btnMenu.setBackground(null);
+        btnMenu.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+        btnMenu.setPadding(8, 0, 8, 0);
+        btnMenu.setOnClickListener(v -> toggleMenu());
+        topBar.addView(btnMenu);
 
         main.addView(topBar);
 
+        // 聊天容器
         scrollView = new ScrollView(this);
         scrollView.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -266,6 +268,7 @@ public class MainActivity extends Activity {
         scrollView.addView(chatContainer);
         main.addView(scrollView);
 
+        // 输入区域（液态玻璃）
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
         inputLayout.setPadding(8, 8, 8, 8);
@@ -311,6 +314,124 @@ public class MainActivity extends Activity {
         main.addView(progressBar);
 
         return main;
+    }
+// 设置菜单
+    private void setupMenu(FrameLayout parent) {
+        // 半透明背景容器（点击关闭菜单）
+        menuContainer = new FrameLayout(this);
+        menuContainer.setLayoutParams(new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+        menuContainer.setBackgroundColor(Color.parseColor("#66000000"));
+        menuContainer.setVisibility(View.GONE);
+        menuContainer.setOnClickListener(v -> closeMenu());
+
+        // 菜单面板（右侧滑入）
+        menuPanel = new LinearLayout(this);
+        menuPanel.setOrientation(LinearLayout.VERTICAL);
+        menuPanel.setGravity(Gravity.TOP | Gravity.END);
+        int panelWidth = (int) (getResources().getDisplayMetrics().widthPixels * 0.6);
+        FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(
+                panelWidth,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        );
+        panelParams.gravity = Gravity.END;
+        menuPanel.setLayoutParams(panelParams);
+        menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
+        menuPanel.setPadding(20, 40, 20, 20);
+
+        // 菜单项：设置
+        Button menuSettings = new Button(this);
+        menuSettings.setText("设置");
+        menuSettings.setTextSize(18);
+        menuSettings.setBackground(null);
+        menuSettings.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+        menuSettings.setGravity(Gravity.CENTER);
+        menuSettings.setPadding(16, 16, 16, 16);
+        menuSettings.setOnClickListener(v -> {
+            closeMenu();
+            Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+            startActivity(intent);
+        });
+        menuPanel.addView(menuSettings);
+
+        // 菜单项：清空
+        Button menuClear = new Button(this);
+        menuClear.setText("清空");
+        menuClear.setTextSize(18);
+        menuClear.setBackground(null);
+        menuClear.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+        menuClear.setGravity(Gravity.CENTER);
+        menuClear.setPadding(16, 16, 16, 16);
+        menuClear.setOnClickListener(v -> {
+            closeMenu();
+            messages.clear();
+            saveHistory();
+            renderMessages();
+            Toast.makeText(MainActivity.this, "对话已清空", Toast.LENGTH_SHORT).show();
+        });
+        menuPanel.addView(menuClear);
+
+        // 关闭按钮（可选，点击面板空白也可关闭）
+        View closeArea = new View(this);
+        closeArea.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1.0f
+        ));
+        closeArea.setOnClickListener(v -> closeMenu());
+        menuPanel.addView(closeArea);
+
+        menuContainer.addView(menuPanel);
+        parent.addView(menuContainer);
+    }
+
+    private void toggleMenu() {
+        if (isMenuOpen) {
+            closeMenu();
+        } else {
+            openMenu();
+        }
+    }
+
+    private void openMenu() {
+        if (menuContainer == null) return;
+        menuContainer.setVisibility(View.VISIBLE);
+        // 从右侧滑入动画
+        TranslateAnimation slideIn = new TranslateAnimation(
+                Animation.RELATIVE_TO_SELF, 1.0f,
+                Animation.RELATIVE_TO_SELF, 0.0f,
+                Animation.RELATIVE_TO_SELF, 0.0f,
+                Animation.RELATIVE_TO_SELF, 0.0f
+        );
+        slideIn.setDuration(300);
+        menuPanel.startAnimation(slideIn);
+        isMenuOpen = true;
+    }
+
+    private void closeMenu() {
+        if (menuContainer == null) return;
+        // 从左侧滑出（向右侧移出）
+        TranslateAnimation slideOut = new TranslateAnimation(
+                Animation.RELATIVE_TO_SELF, 0.0f,
+                Animation.RELATIVE_TO_SELF, 1.0f,
+                Animation.RELATIVE_TO_SELF, 0.0f,
+                Animation.RELATIVE_TO_SELF, 0.0f
+        );
+        slideOut.setDuration(300);
+        slideOut.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {}
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                menuContainer.setVisibility(View.GONE);
+            }
+            @Override
+            public void onAnimationRepeat(Animation animation) {}
+        });
+        menuPanel.startAnimation(slideOut);
+        isMenuOpen = false;
     }
 
     private void applyBackground() {
