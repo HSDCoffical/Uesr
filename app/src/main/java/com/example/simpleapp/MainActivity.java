@@ -311,7 +311,7 @@ public class MainActivity extends Activity {
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
         // 输入框恢复之前大小（padding从7改为12）
-        etInput.setPadding(16, 46, 16, 46);
+        etInput.setPadding(16, 40, 16, 40);
         etInput.setTextSize(12);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
@@ -325,7 +325,7 @@ public class MainActivity extends Activity {
         // 仅缩小发送按钮（宽68dp，高32dp）
         LinearLayout.LayoutParams sendParams = new LinearLayout.LayoutParams(
                 dpToPx(54),
-                dpToPx(26)
+                dpToPx(28)
         );
         btnSend.setLayoutParams(sendParams);
         btnSend.setPadding(0, 0, 0, 0);
