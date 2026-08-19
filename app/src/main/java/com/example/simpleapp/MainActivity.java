@@ -805,7 +805,9 @@ private void closeMenu() {
         });
     }
 
-    // ----- 导出对话（系统文件选择器，无需权限） -----
+    // ----- 导出对话（使用系统文件选择器，修正版） -----
+    private String exportContent; // 存储要导出的内容
+
     private void exportChat() {
         if (messages.isEmpty()) {
             Toast.makeText(this, "没有可导出的对话", Toast.LENGTH_SHORT).show();
@@ -828,36 +830,36 @@ private void closeMenu() {
         sb.append("====================================\n");
         sb.append("—— 导出结束 ——");
 
-        // 创建临时文件
-        try {
-            File tempFile = new File(getCacheDir(), "temp_export.txt");
-            FileWriter writer = new FileWriter(tempFile);
-            writer.write(sb.toString());
-            writer.close();
+        exportContent = sb.toString();
 
-            // 使用系统文件选择器（ACTION_CREATE_DOCUMENT）
-            Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-            intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.setType("text/plain");
-            intent.putExtra(Intent.EXTRA_TITLE, "AI_Chat_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt");
-            intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(tempFile));
-            startActivityForResult(intent, REQUEST_CODE_SAVE_FILE);
-        } catch (Exception e) {
-            Log.e(TAG, "导出失败", e);
-            Toast.makeText(this, "导出失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("text/plain");
+        intent.putExtra(Intent.EXTRA_TITLE, "AI_Chat_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt");
+        startActivityForResult(intent, REQUEST_CODE_SAVE_FILE);
     }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE_SAVE_FILE && resultCode == RESULT_OK) {
-            // 删除临时文件
-            File tempFile = new File(getCacheDir(), "temp_export.txt");
-            if (tempFile.exists()) {
-                tempFile.delete();
+        if (requestCode == REQUEST_CODE_SAVE_FILE && resultCode == RESULT_OK && data != null) {
+            Uri uri = data.getData();
+            if (uri != null) {
+                try {
+                    android.content.ContentResolver resolver = getContentResolver();
+                    java.io.OutputStream os = resolver.openOutputStream(uri);
+                    if (os != null) {
+                        os.write(exportContent.getBytes());
+                        os.close();
+                        Toast.makeText(this, "导出成功！", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(this, "导出失败：无法写入文件", Toast.LENGTH_SHORT).show();
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, "导出失败", e);
+                    Toast.makeText(this, "导出失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
+                }
             }
-            Toast.makeText(this, "导出成功！", Toast.LENGTH_SHORT).show();
         }
     }
 
