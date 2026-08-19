@@ -273,7 +273,7 @@ public class MainActivity extends Activity {
         btnMenu.setBackground(null);
         btnMenu.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         // 左边距增加，让按钮再向右移动
-        btnMenu.setPadding(100, 0, 8, 0);
+        btnMenu.setPadding(150, 0, 8, 0);
         btnMenu.setOnClickListener(v -> toggleMenu());
         topBar.addView(btnMenu);
 
