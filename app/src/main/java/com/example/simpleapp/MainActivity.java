@@ -209,7 +209,7 @@ public class MainActivity extends Activity {
     private LinearLayout buildChatUI() {
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
-        main.setPadding(16, 40, 16, 12); // 顶部留出状态栏
+        main.setPadding(16, 40, 16, 12);
 
         // 顶部栏（模型名称 + 文字按钮）
         LinearLayout topBar = new LinearLayout(this);
@@ -217,7 +217,6 @@ public class MainActivity extends Activity {
         topBar.setGravity(Gravity.CENTER_VERTICAL);
         topBar.setPadding(0, 8, 0, 12);
 
-        // 只显示模型名称，去掉"模型:"前缀
         tvStatus = new TextView(this);
         String modelName = settingsHelper.getModel();
         if (modelName == null || modelName.isEmpty()) {
@@ -230,7 +229,6 @@ public class MainActivity extends Activity {
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
 
-        // 设置按钮（文字）
         Button btnSettings = new Button(this);
         btnSettings.setText("设置");
         btnSettings.setTextSize(16);
@@ -243,7 +241,6 @@ public class MainActivity extends Activity {
         });
         topBar.addView(btnSettings);
 
-        // 清空按钮（文字）
         Button btnClear = new Button(this);
         btnClear.setText("清空");
         btnClear.setTextSize(16);
@@ -278,13 +275,12 @@ public class MainActivity extends Activity {
         // 输入区域（液态玻璃效果）
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
-        inputLayout.setPadding(8, 8, 8, 8); // 缩小垂直间距
+        inputLayout.setPadding(8, 8, 8, 8);
 
-        // 液态玻璃背景：半透明白色/深色，带渐变和边框
         GradientDrawable glass = new GradientDrawable();
         glass.setCornerRadius(24);
         if (themeHelper.isDarkMode()) {
-            glass.setColor(Color.parseColor("#55FFFFFF")); // 更透明
+            glass.setColor(Color.parseColor("#55FFFFFF"));
         } else {
             glass.setColor(Color.parseColor("#99FFFFFF"));
         }
