@@ -2,6 +2,7 @@ package com.example.simpleapp;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -15,8 +16,18 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
+
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
+    private static final String PREFS_NAME = "chat_prefs";
+    private static final String KEY_HISTORY = "chat_history";
+
     private SettingsHelper settingsHelper;
     private ApiHelper apiHelper;
     private TextView tvChat;
@@ -28,6 +39,10 @@ public class MainActivity extends Activity {
     private Handler timeoutHandler;
     private Runnable timeoutRunnable;
     private boolean waitingForResponse = false;
+
+    // 消息列表
+    private List<ChatMessage> messages = new ArrayList<>();
+    private Gson gson = new Gson();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +57,9 @@ public class MainActivity extends Activity {
             finish();
             return;
         }
+
+        // 加载历史记录
+        loadHistory();
 
         // 主布局
         LinearLayout mainLayout = new LinearLayout(this);
@@ -62,6 +80,7 @@ public class MainActivity extends Activity {
         ));
         titleBar.addView(title);
 
+        // 设置按钮
         Button btnSettings = new Button(this);
         btnSettings.setText("⚙️");
         btnSettings.setTextSize(24);
@@ -71,6 +90,20 @@ public class MainActivity extends Activity {
             startActivity(intent);
         });
         titleBar.addView(btnSettings);
+
+        // 清空按钮
+        Button btnClear = new Button(this);
+        btnClear.setText("🗑️");
+        btnClear.setTextSize(24);
+        btnClear.setBackground(null);
+        btnClear.setOnClickListener(v -> {
+            messages.clear();
+            saveHistory();
+            updateChatDisplay();
+            Toast.makeText(this, "对话已清空", Toast.LENGTH_SHORT).show();
+        });
+        titleBar.addView(btnClear);
+
         mainLayout.addView(titleBar);
 
         // 状态
@@ -88,7 +121,6 @@ public class MainActivity extends Activity {
                 1.0f
         ));
         tvChat = new TextView(this);
-        tvChat.setText("欢迎使用 AI Chat\n请输入消息开始对话\n");
         tvChat.setTextSize(16);
         tvChat.setPadding(16, 16, 16, 16);
         scrollView.addView(tvChat);
@@ -121,12 +153,14 @@ public class MainActivity extends Activity {
 
         setContentView(mainLayout);
 
+        // 更新显示
+        updateChatDisplay();
+
         // 初始化超时 Handler
         timeoutHandler = new Handler();
 
         btnSend.setOnClickListener(v -> {
             try {
-                // 取消之前的超时
                 if (timeoutRunnable != null) {
                     timeoutHandler.removeCallbacks(timeoutRunnable);
                 }
@@ -142,17 +176,23 @@ public class MainActivity extends Activity {
                     return;
                 }
 
-                appendToChat("我: " + input);
+                // 添加用户消息
+                messages.add(new ChatMessage("user", input));
+                saveHistory();
+                updateChatDisplay();
+
                 etInput.setText("");
                 setLoading(true);
                 waitingForResponse = true;
 
-                // 设置超时检测（30秒）
+                // 超时检测
                 timeoutRunnable = () -> {
                     if (waitingForResponse) {
                         waitingForResponse = false;
                         setLoading(false);
-                        appendToChat("[超时] 请求超时，请检查网络或重试");
+                        messages.add(new ChatMessage("ai", "[超时] 请求超时，请检查网络或重试"));
+                        saveHistory();
+                        updateChatDisplay();
                         Toast.makeText(MainActivity.this, "请求超时", Toast.LENGTH_LONG).show();
                     }
                 };
@@ -162,9 +202,6 @@ public class MainActivity extends Activity {
                 String apiKey = settingsHelper.getApiKey();
                 String model = settingsHelper.getModel();
 
-                Log.d(TAG, "发送消息，BaseURL=" + baseUrl + ", Model=" + model);
-
-                // 检查参数
                 if (baseUrl == null || baseUrl.isEmpty()) {
                     throw new IllegalArgumentException("Base URL 不能为空");
                 }
@@ -181,7 +218,9 @@ public class MainActivity extends Activity {
                                 timeoutHandler.removeCallbacks(timeoutRunnable);
                             }
                             setLoading(false);
-                            appendToChat("AI: " + response);
+                            messages.add(new ChatMessage("ai", response));
+                            saveHistory();
+                            updateChatDisplay();
                             scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
                         });
                     }
@@ -194,7 +233,9 @@ public class MainActivity extends Activity {
                                 timeoutHandler.removeCallbacks(timeoutRunnable);
                             }
                             setLoading(false);
-                            appendToChat("[错误] " + error);
+                            messages.add(new ChatMessage("ai", "[错误] " + error));
+                            saveHistory();
+                            updateChatDisplay();
                             Toast.makeText(MainActivity.this, error, Toast.LENGTH_LONG).show();
                         });
                     }
@@ -205,7 +246,9 @@ public class MainActivity extends Activity {
                 if (timeoutRunnable != null) {
                     timeoutHandler.removeCallbacks(timeoutRunnable);
                 }
-                appendToChat("[系统错误] " + e.getMessage());
+                messages.add(new ChatMessage("ai", "[系统错误] " + e.getMessage()));
+                saveHistory();
+                updateChatDisplay();
                 Toast.makeText(this, "发送失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 setLoading(false);
             }
@@ -228,9 +271,39 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void appendToChat(String text) {
-        String current = tvChat.getText().toString();
-        tvChat.setText(current + "\n" + text + "\n");
+    // 加载历史记录
+    private void loadHistory() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String json = prefs.getString(KEY_HISTORY, "");
+        if (!json.isEmpty()) {
+            Type type = new TypeToken<List<ChatMessage>>() {}.getType();
+            List<ChatMessage> loaded = gson.fromJson(json, type);
+            if (loaded != null) {
+                messages = loaded;
+            }
+        }
+    }
+
+    // 保存历史记录
+    private void saveHistory() {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        String json = gson.toJson(messages);
+        prefs.edit().putString(KEY_HISTORY, json).apply();
+    }
+
+    // 更新聊天显示
+    private void updateChatDisplay() {
+        StringBuilder sb = new StringBuilder();
+        if (messages.isEmpty()) {
+            sb.append("欢迎使用 AI Chat\n请输入消息开始对话\n");
+        } else {
+            for (ChatMessage msg : messages) {
+                String prefix = msg.getRole().equals("user") ? "我: " : "AI: ";
+                sb.append(prefix).append(msg.getContent()).append("\n\n");
+            }
+        }
+        tvChat.setText(sb.toString());
+        scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
     }
 
     private void setLoading(boolean loading) {
