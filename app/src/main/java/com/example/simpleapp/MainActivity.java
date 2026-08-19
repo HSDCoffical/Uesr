@@ -65,6 +65,9 @@ public class MainActivity extends Activity {
     private LinearLayout menuPanel;
     private boolean isMenuOpen = false;
 
+    // 状态栏高度
+    private int statusBarHeight = 0;
+
     // 获取状态栏高度
     private int getStatusBarHeight() {
         int result = 0;
@@ -73,6 +76,11 @@ public class MainActivity extends Activity {
             result = getResources().getDimensionPixelSize(resourceId);
         }
         return result;
+    }
+
+    // dp 转 px 工具方法
+    private int dpToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
     }
 
     @Override
@@ -92,6 +100,9 @@ public class MainActivity extends Activity {
 
         loadHistory();
 
+        // 获取状态栏高度
+        statusBarHeight = getStatusBarHeight();
+
         mainLayout = new FrameLayout(this);
         bgImage = new ImageView(this);
         bgImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -106,12 +117,11 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
-        // 状态栏白色背景（遮挡背景图顶部）
-        int statusBarHeight = getStatusBarHeight();
+        // 状态栏白色背景（遮挡背景图顶部），高度扩展为状态栏高度的2倍
         View statusBarView = new View(this);
         statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                statusBarHeight
+                statusBarHeight * 2
         ));
         statusBarView.setBackgroundColor(Color.WHITE);
         mainLayout.addView(statusBarView);
@@ -233,20 +243,14 @@ public class MainActivity extends Activity {
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        // 状态栏高度 + 8dp 下移，32 约等于状态栏高度（24dp）+ 8dp 间距
-        topBar.setPadding(16, 64, 16, 16);
+        // 上边距设为 状态栏高度*2 + 8dp，让内容在白色框下方
+        int topPadding = statusBarHeight * 2 + dpToPx(8);
+        topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
-        GradientDrawable topBg = new GradientDrawable();
-        topBg.setCornerRadius(20);
-        if (themeHelper.isDarkMode()) {
-            topBg.setColor(Color.parseColor("#AA222222"));
-        } else {
-            topBg.setColor(Color.parseColor("#CCFFFFFF"));
-        }
-        topBar.setBackground(topBg);
+        // 删除毛玻璃背景（不设置任何背景）
 
         tvStatus = new TextView(this);
         String modelName = settingsHelper.getModel();
@@ -312,7 +316,13 @@ public class MainActivity extends Activity {
         btnSend.setText("发送");
         btnSend.setBackgroundColor(Color.parseColor("#007AFF"));
         btnSend.setTextColor(Color.WHITE);
-        btnSend.setPadding(20, 10, 20, 10);
+        // 设置固定宽高（宽度80dp，高度40dp）
+        LinearLayout.LayoutParams sendParams = new LinearLayout.LayoutParams(
+                dpToPx(80),  // 宽度 80dp
+                dpToPx(40)   // 高度 40dp
+        );
+        btnSend.setLayoutParams(sendParams);
+        btnSend.setPadding(0, 0, 0, 0);
         GradientDrawable btnShape = new GradientDrawable();
         btnShape.setCornerRadius(20);
         btnShape.setColor(Color.parseColor("#007AFF"));
