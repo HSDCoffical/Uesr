@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
@@ -240,11 +241,10 @@ public class MainActivity extends Activity {
         main.setOrientation(LinearLayout.VERTICAL);
         main.setPadding(16, 0, 16, 22);
 
-        // 顶部栏：现在放在白色状态栏区域内，直接紧贴顶部
+        // 顶部栏
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        // 上边距设为 状态栏高度 - 8dp（让内容紧贴白色框底部）
         int topPadding = statusBarHeight - dpToPx(8);
         if (topPadding < 0) topPadding = 0;
         topBar.setPadding(16, topPadding, 16, 16);
@@ -252,7 +252,6 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
-        // 删除背景（完全透明）
 
         tvStatus = new TextView(this);
         String modelName = settingsHelper.getModel();
@@ -261,7 +260,9 @@ public class MainActivity extends Activity {
         } else {
             tvStatus.setText(modelName);
         }
-        tvStatus.setTextSize(18); // 字体调大
+        // 字体加大到 24sp 并加粗
+        tvStatus.setTextSize(24);
+        tvStatus.setTypeface(Typeface.DEFAULT_BOLD);
         tvStatus.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
@@ -318,10 +319,9 @@ public class MainActivity extends Activity {
         btnSend.setText("发送");
         btnSend.setBackgroundColor(Color.parseColor("#007AFF"));
         btnSend.setTextColor(Color.WHITE);
-        // 设置固定宽高（宽度80dp，高度40dp）
         LinearLayout.LayoutParams sendParams = new LinearLayout.LayoutParams(
-                dpToPx(80),  // 宽度 80dp
-                dpToPx(40)   // 高度 40dp
+                dpToPx(80),
+                dpToPx(40)
         );
         btnSend.setLayoutParams(sendParams);
         btnSend.setPadding(0, 0, 0, 0);
@@ -363,7 +363,8 @@ public class MainActivity extends Activity {
     panelParams.gravity = Gravity.END;
     menuPanel.setLayoutParams(panelParams);
     menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
-    menuPanel.setPadding(20, 40, 20, 20);
+    // 顶部内边距从 40 改为 80，让菜单项下移
+    menuPanel.setPadding(20, 80, 20, 20);
 
     Button menuSettings = new Button(this);
     menuSettings.setText("设置");
