@@ -55,7 +55,6 @@ public class MainActivity extends Activity {
     private static final String KEY_CURRENT_INDEX = "current_index";
     private static final int REQUEST_CODE_SAVE_FILE = 1004;
 
-    // 对话对象
     public static class Conversation {
         public String title;
         public List<ChatMessage> messages;
@@ -87,13 +86,11 @@ public class MainActivity extends Activity {
     private ImageView bgImage;
     private int bgAlpha = 100;
 
-    // 菜单相关
     private FrameLayout menuContainer;
     private LinearLayout menuPanel;
-    private LinearLayout historyContainer; // 历史条目容器
+    private LinearLayout historyContainer;
     private boolean isMenuOpen = false;
 
-    // 状态栏高度
     private int statusBarHeight = 0;
 
     private int getStatusBarHeight() {
@@ -143,7 +140,6 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
-        // 状态栏白色背景
         View statusBarView = new View(this);
         statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -291,8 +287,8 @@ public class MainActivity extends Activity {
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        // 修复：让内容在白色区域内
-        int topPadding = statusBarHeight * 2 - dpToPx(45);
+        // 顶部内边距已调整为 45（用户指定）
+        int topPadding = dpToPx(45);
         topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -413,7 +409,6 @@ public class MainActivity extends Activity {
     menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
     menuPanel.setPadding(20, 100, 20, 20);
 
-    // 设置
     LinearLayout itemSettings = createMenuItem("设置");
     itemSettings.setOnClickListener(v -> {
         closeMenu();
@@ -422,7 +417,6 @@ public class MainActivity extends Activity {
     });
     menuPanel.addView(itemSettings);
 
-    // 分割线1
     View divider1 = new View(this);
     divider1.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -431,18 +425,16 @@ public class MainActivity extends Activity {
     divider1.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
     menuPanel.addView(divider1);
 
-    // 清空
     LinearLayout itemClear = createMenuItem("清空");
     itemClear.setOnClickListener(v -> {
         closeMenu();
         messages.clear();
         saveAllConversations();
         renderMessages();
-        Toast.makeText(MainActivity.this, "对话已清空", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "对话已清空", Toast.LENGTH_SHORT).show();
     });
     menuPanel.addView(itemClear);
 
-    // 分割线2
     View divider2 = new View(this);
     divider2.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -451,7 +443,6 @@ public class MainActivity extends Activity {
     divider2.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
     menuPanel.addView(divider2);
 
-    // 导出对话
     LinearLayout itemExport = createMenuItem("导出对话");
     itemExport.setOnClickListener(v -> {
         closeMenu();
@@ -459,7 +450,6 @@ public class MainActivity extends Activity {
     });
     menuPanel.addView(itemExport);
 
-    // 分割线3
     View divider3 = new View(this);
     divider3.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -468,7 +458,6 @@ public class MainActivity extends Activity {
     divider3.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
     menuPanel.addView(divider3);
 
-    // 新建对话
     LinearLayout itemNewChat = createMenuItem("新建对话");
     itemNewChat.setOnClickListener(v -> {
         closeMenu();
@@ -476,7 +465,6 @@ public class MainActivity extends Activity {
     });
     menuPanel.addView(itemNewChat);
 
-    // 分割线4
     View divider4 = new View(this);
     divider4.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -485,7 +473,6 @@ public class MainActivity extends Activity {
     divider4.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
     menuPanel.addView(divider4);
 
-    // 对话历史标题
     LinearLayout headerRow = new LinearLayout(this);
     headerRow.setOrientation(LinearLayout.HORIZONTAL);
     headerRow.setPadding(16, 16, 16, 8);
@@ -500,7 +487,6 @@ public class MainActivity extends Activity {
     headerRow.addView(headerLabel);
     menuPanel.addView(headerRow);
 
-    // 历史条目容器（动态填充）
     historyContainer = new LinearLayout(this);
     historyContainer.setOrientation(LinearLayout.VERTICAL);
     historyContainer.setLayoutParams(new LinearLayout.LayoutParams(
@@ -509,7 +495,6 @@ public class MainActivity extends Activity {
     ));
     menuPanel.addView(historyContainer);
 
-    // 底部空白区域
     View closeArea = new View(this);
     closeArea.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
@@ -610,6 +595,7 @@ private void closeMenu() {
     isMenuOpen = false;
 }
 
+// ----- 刷新对话历史（支持长按删除/导出）-----
 private void refreshHistory() {
     if (historyContainer == null) return;
     historyContainer.removeAllViews();
@@ -632,435 +618,348 @@ private void refreshHistory() {
         if (currentIndex == i) {
             item.setBackgroundColor(Color.parseColor("#33007AFF"));
         }
-        final int finalIndex = i;
+        // 点击：切换到该对话
         item.setOnClickListener(v -> {
             closeMenu();
-            loadConversation(finalIndex);
+            loadConversation(index);
+        });
+        // 长按：弹出删除/导出选项
+        item.setOnLongClickListener(v -> {
+            showHistoryItemMenu(index);
+            return true;
         });
         historyContainer.addView(item);
     }
-}    private void applyBackground() {
-        Bitmap bg = themeHelper.getBackground();
-        if (bg != null) {
-            bgImage.setImageBitmap(bg);
-            bgImage.setBackgroundColor(Color.TRANSPARENT);
-            int alpha = (int) (bgAlpha / 100.0 * 255);
-            bgImage.setAlpha(alpha);
-        } else {
-            bgImage.setImageDrawable(null);
-            if (themeHelper.isDarkMode()) {
-                bgImage.setBackgroundColor(Color.parseColor("#303030"));
-            } else {
-                bgImage.setBackgroundColor(Color.parseColor("#F5F5F5"));
-            }
-            bgImage.setAlpha(255);
+}
+
+// ----- 对话历史条目长按菜单 -----
+private void showHistoryItemMenu(final int index) {
+    if (index < 0 || index >= conversationHistory.size()) return;
+    final Conversation conv = conversationHistory.get(index);
+    String title = conv.title != null && !conv.title.isEmpty() ? conv.title : "无标题";
+
+    String[] options = {"导出此对话", "删除此对话"};
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    builder.setTitle(title);
+    builder.setItems(options, (dialog, which) -> {
+        if (which == 0) {
+            // 导出
+            exportSingleConversation(index);
+        } else if (which == 1) {
+            // 删除
+            deleteConversation(index);
         }
+    });
+    builder.show();
+}
+
+// ----- 导出单个对话 -----
+private void exportSingleConversation(int index) {
+    if (index < 0 || index >= conversationHistory.size()) return;
+    Conversation conv = conversationHistory.get(index);
+    if (conv.messages == null || conv.messages.isEmpty()) {
+        Toast.makeText(this, "该对话为空，无法导出", Toast.LENGTH_SHORT).show();
+        return;
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        bgAlpha = themeHelper.getBgAlpha();
-        applyBackground();
-        if (tvStatus != null) {
-            String modelName = settingsHelper.getModel();
-            tvStatus.setText(modelName != null && !modelName.isEmpty() ? modelName : "未配置");
-        }
-        renderMessages();
+    StringBuilder sb = new StringBuilder();
+    sb.append("AI Chat 对话导出\n");
+    sb.append("导出时间: ").append(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date())).append("\n");
+    sb.append("标题: ").append(conv.title != null ? conv.title : "无标题").append("\n\n");
+    sb.append("====================================\n\n");
+
+    for (ChatMessage msg : conv.messages) {
+        String role = msg.getRole().equals("user") ? "我" : "AI";
+        String time = formatTime(msg.getTimestamp());
+        sb.append("[").append(role).append("] ").append(time).append("\n");
+        sb.append(msg.getContent()).append("\n\n");
     }
+    sb.append("====================================\n");
+    sb.append("—— 导出结束 ——");
 
-    private String formatTime(long timestamp) {
-        if (timestamp == 0) {
-            return "刚刚";
+    String content = sb.toString();
+
+    try {
+        File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        if (!dir.exists()) {
+            dir.mkdirs();
         }
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
-        return sdf.format(new java.util.Date(timestamp));
-    }
-
-    private void renderMessages() {
-        chatContainer.removeAllViews();
-
-        if (messages.isEmpty()) {
-            TextView emptyHint = new TextView(this);
-            emptyHint.setText("欢迎使用 AI Chat\n请输入消息开始对话");
-            emptyHint.setTextSize(14);
-            emptyHint.setTextColor(Color.parseColor("#999999"));
-            emptyHint.setGravity(Gravity.CENTER);
-            emptyHint.setPadding(0, 40, 0, 40);
-            chatContainer.addView(emptyHint);
-            return;
-        }
-
-        for (int i = 0; i < messages.size(); i++) {
-            ChatMessage msg = messages.get(i);
-            boolean isUser = msg.getRole().equals("user");
-
-            LinearLayout wrapper = new LinearLayout(this);
-            wrapper.setOrientation(LinearLayout.VERTICAL);
-            wrapper.setLayoutParams(new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            ));
-            if (isUser) {
-                wrapper.setGravity(Gravity.END);
-            } else {
-                wrapper.setGravity(Gravity.START);
-            }
-
-            TextView bubble = createBubble(msg.getContent(), isUser);
-            final int position = i;
-            bubble.setOnLongClickListener(v -> {
-                showMessageMenu(position);
-                return true;
-            });
-            wrapper.addView(bubble);
-
-            TextView timeView = new TextView(this);
-            timeView.setText(formatTime(msg.getTimestamp()));
-            timeView.setTextSize(10);
-            timeView.setTextColor(Color.parseColor("#999999"));
-            timeView.setPadding(4, 4, 4, 4);
-            if (isUser) {
-                timeView.setGravity(Gravity.END);
-            } else {
-                timeView.setGravity(Gravity.START);
-            }
-            wrapper.addView(timeView);
-
-            chatContainer.addView(wrapper);
-        }
-
-        scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
-    }
-
-    private TextView createBubble(String text, boolean isUser) {
-        TextView bubble = new TextView(this);
-        bubble.setText(text);
-        bubble.setTextSize(14);
-        bubble.setPadding(14, 10, 14, 10);
-        bubble.setMaxWidth((int) (getResources().getDisplayMetrics().widthPixels * 0.7));
-
-        GradientDrawable drawable = new GradientDrawable();
-        drawable.setCornerRadius(18);
-        if (isUser) {
-            drawable.setColor(Color.parseColor("#BB007AFF"));
-            bubble.setTextColor(Color.WHITE);
-        } else {
-            drawable.setColor(Color.parseColor("#BBE5E5EA"));
-            bubble.setTextColor(Color.BLACK);
-        }
-        bubble.setBackground(drawable);
-
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        );
-        params.setMargins(isUser ? 30 : 0, 4, isUser ? 0 : 30, 4);
-        bubble.setLayoutParams(params);
-
-        return bubble;
-    }
-
-    // ----- 长按菜单 -----
-    private void showMessageMenu(final int position) {
-        if (position < 0 || position >= messages.size()) return;
-        final ChatMessage msg = messages.get(position);
-        if (msg.getContent().startsWith("[超时]") || msg.getContent().startsWith("[错误]") || msg.getContent().startsWith("[系统错误]")) {
-            Toast.makeText(this, "错误消息不支持操作", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        final String[] options;
-        final boolean isAi = msg.getRole().equals("ai");
-        if (isAi) {
-            options = new String[]{"复制", "重新生成", "删除"};
-        } else {
-            options = new String[]{"复制", "删除"};
-        }
-
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("选择操作");
-        builder.setItems(options, (dialog, which) -> {
-            String selected = options[which];
-            if ("复制".equals(selected)) {
-                copyMessage(msg.getContent());
-            } else if ("重新生成".equals(selected)) {
-                regenerateMessage(position);
-            } else if ("删除".equals(selected)) {
-                deleteMessage(position);
-            }
-        });
-        builder.show();
-    }
-
-    private void copyMessage(String content) {
-        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
-        ClipData clip = ClipData.newPlainText("ChatMessage", content);
-        clipboard.setPrimaryClip(clip);
-        Toast.makeText(this, "已复制到剪贴板", Toast.LENGTH_SHORT).show();
-    }
-
-    private void deleteMessage(int position) {
-        if (position < 0 || position >= messages.size()) return;
-        messages.remove(position);
-        saveAllConversations();
-        renderMessages();
-        Toast.makeText(this, "消息已删除", Toast.LENGTH_SHORT).show();
-    }
-
-    private void regenerateMessage(int position) {
-        if (position < 0 || position >= messages.size()) return;
-        if (!messages.get(position).getRole().equals("ai")) {
-            Toast.makeText(this, "只能重新生成AI回复", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        int userMsgIndex = -1;
-        for (int i = position - 1; i >= 0; i--) {
-            if (messages.get(i).getRole().equals("user")) {
-                userMsgIndex = i;
-                break;
-            }
-        }
-        if (userMsgIndex == -1) {
-            Toast.makeText(this, "没有找到对应的用户消息", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        messages.remove(position);
-        int currentSize = messages.size();
-        if (position < currentSize) {
-            messages.subList(position, currentSize).clear();
-        }
-        messages.add(new ChatMessage("ai", ""));
-        final int newAiIndex = messages.size() - 1;
-        saveAllConversations();
-        renderMessages();
-
-        setLoading(true);
-        waitingForResponse = true;
-        timeoutRunnable = () -> {
-            if (waitingForResponse) {
-                waitingForResponse = false;
-                setLoading(false);
-                messages.set(newAiIndex, new ChatMessage("ai", "[超时] 请求超时，请检查网络或重试"));
-                saveAllConversations();
-                renderMessages();
-                Toast.makeText(MainActivity.this, "请求超时", Toast.LENGTH_LONG).show();
-            }
-        };
-        timeoutHandler.postDelayed(timeoutRunnable, 30000);
-
-        String baseUrl = settingsHelper.getBaseUrl();
-        String apiKey = settingsHelper.getApiKey();
-        String model = settingsHelper.getModel();
-
-        apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallback() {
-            @Override
-            public void onSuccess(String response) {
-                runOnUiThread(() -> {
-                    waitingForResponse = false;
-                    if (timeoutRunnable != null) {
-                        timeoutHandler.removeCallbacks(timeoutRunnable);
-                    }
-                    setLoading(false);
-                    if (!messages.isEmpty()) {
-                        messages.set(newAiIndex, new ChatMessage("ai", response));
-                        saveAllConversations();
-                        renderMessages();
-                        scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
-                    }
-                });
-            }
-
-            @Override
-            public void onChunk(String chunk) {
-                runOnUiThread(() -> {
-                    if (!messages.isEmpty()) {
-                        String current = messages.get(newAiIndex).getContent();
-                        messages.set(newAiIndex, new ChatMessage("ai", current + chunk));
-                        renderMessages();
-                        scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
-                    }
-                });
-            }
-
-            @Override
-            public void onError(String error) {
-                runOnUiThread(() -> {
-                    waitingForResponse = false;
-                    if (timeoutRunnable != null) {
-                        timeoutHandler.removeCallbacks(timeoutRunnable);
-                    }
-                    setLoading(false);
-                    if (!messages.isEmpty()) {
-                        messages.set(newAiIndex, new ChatMessage("ai", "[错误] " + error));
-                        saveAllConversations();
-                        renderMessages();
-                    }
-                    Toast.makeText(MainActivity.this, error, Toast.LENGTH_LONG).show();
-                });
-            }
-        });
-    }
-
-    // ----- 对话管理 -----
-    private String generateTitle(List<ChatMessage> msgs) {
-        for (ChatMessage msg : msgs) {
-            if (msg.getRole().equals("user")) {
-                String text = msg.getContent();
-                if (text.length() <= 20) return text;
-                return text.substring(0, 20) + "...";
-            }
-        }
-        return "新对话";
-    }
-
-    private void saveAllConversations() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        if (!messages.isEmpty()) {
-            if (currentIndex == -1) {
-                String title = generateTitle(messages);
-                Conversation conv = new Conversation(title, new ArrayList<>(messages));
-                conversationHistory.add(conv);
-                currentIndex = conversationHistory.size() - 1;
-            } else {
-                conversationHistory.get(currentIndex).messages = new ArrayList<>(messages);
-                String title = generateTitle(messages);
-                conversationHistory.get(currentIndex).title = title;
-            }
-        }
-        String json = gson.toJson(conversationHistory);
-        prefs.edit().putString(KEY_CONVERSATIONS, json)
-                .putInt(KEY_CURRENT_INDEX, currentIndex)
-                .apply();
-    }
-
-    private void loadAllConversations() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        String json = prefs.getString(KEY_CONVERSATIONS, "");
-        if (!json.isEmpty()) {
-            Type type = new TypeToken<List<Conversation>>() {}.getType();
-            List<Conversation> loaded = gson.fromJson(json, type);
-            if (loaded != null) {
-                conversationHistory = loaded;
-            }
-        }
-    }
-
-    private void loadCurrentIndex() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        currentIndex = prefs.getInt(KEY_CURRENT_INDEX, -1);
-        if (currentIndex >= 0 && currentIndex < conversationHistory.size()) {
-            Conversation conv = conversationHistory.get(currentIndex);
-            messages = new ArrayList<>(conv.messages);
-        } else {
-            messages.clear();
-            currentIndex = -1;
-        }
-        if (messages.isEmpty()) {
-            currentIndex = -1;
-        }
-    }
-
-    private void loadConversation(int index) {
-        if (index < 0 || index >= conversationHistory.size()) return;
-        Conversation conv = conversationHistory.get(index);
-        messages = new ArrayList<>(conv.messages);
-        currentIndex = index;
-        saveAllConversations();
-        renderMessages();
-        Toast.makeText(this, "已切换到: " + conv.title, Toast.LENGTH_SHORT).show();
-    }
-
-    private void newConversation() {
-        if (!messages.isEmpty()) {
-            if (currentIndex == -1) {
-                String title = generateTitle(messages);
-                Conversation conv = new Conversation(title, new ArrayList<>(messages));
-                conversationHistory.add(conv);
-            } else {
-                conversationHistory.get(currentIndex).messages = new ArrayList<>(messages);
-                String title = generateTitle(messages);
-                conversationHistory.get(currentIndex).title = title;
-            }
-            saveAllConversations();
-        }
-        messages.clear();
-        currentIndex = -1;
-        saveAllConversations();
-        renderMessages();
-        Toast.makeText(this, "已创建新对话", Toast.LENGTH_SHORT).show();
-    }
-
-    // ----- 导出对话 -----
-    private String exportContent;
-
-    private void exportChat() {
-        if (messages.isEmpty()) {
-            Toast.makeText(this, "没有可导出的对话", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("AI Chat 对话导出\n");
-        sb.append("导出时间: ").append(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date())).append("\n\n");
-        sb.append("====================================\n\n");
-
-        for (ChatMessage msg : messages) {
-            String role = msg.getRole().equals("user") ? "我" : "AI";
-            String time = formatTime(msg.getTimestamp());
-            sb.append("[").append(role).append("] ").append(time).append("\n");
-            sb.append(msg.getContent()).append("\n\n");
-        }
-
-        sb.append("====================================\n");
-        sb.append("—— 导出结束 ——");
-
-        exportContent = sb.toString();
-
-        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("text/plain");
-        intent.putExtra(Intent.EXTRA_TITLE, "AI_Chat_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt");
-        startActivityForResult(intent, REQUEST_CODE_SAVE_FILE);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_CODE_SAVE_FILE && resultCode == RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null) {
-                try {
-                    android.content.ContentResolver resolver = getContentResolver();
-                    java.io.OutputStream os = resolver.openOutputStream(uri);
-                    if (os != null) {
-                        os.write(exportContent.getBytes());
-                        os.close();
-                        Toast.makeText(this, "导出成功！", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(this, "导出失败：无法写入文件", Toast.LENGTH_SHORT).show();
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, "导出失败", e);
-                    Toast.makeText(this, "导出失败：" + e.getMessage(), Toast.LENGTH_SHORT).show();
-                }
-            }
-        }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (timeoutRunnable != null) {
-            timeoutHandler.removeCallbacks(timeoutRunnable);
-        }
-    }
-
-    private void setLoading(boolean loading) {
-        btnSend.setEnabled(!loading);
-        etInput.setEnabled(!loading);
-        progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
+        String fileName = "AI_Chat_" + conv.title.replaceAll("[^a-zA-Z0-9]", "_") + "_" +
+                new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt";
+        File file = new File(dir, fileName);
+        FileWriter writer = new FileWriter(file);
+        writer.write(content);
+        writer.close();
+        Toast.makeText(this, "导出成功！\n" + file.getAbsolutePath(), Toast.LENGTH_LONG).show();
+    } catch (Exception e) {
+        Log.e(TAG, "导出失败", e);
+        Toast.makeText(this, "导出失败: " + e.getMessage(), Toast.LENGTH_SHORT).show();
     }
 }
+
+// ----- 删除单个对话 -----
+private void deleteConversation(int index) {
+    if (index < 0 || index >= conversationHistory.size()) return;
+    String title = conversationHistory.get(index).title;
+    new AlertDialog.Builder(this)
+            .setTitle("删除对话")
+            .setMessage("确定要删除 \"" + title + "\" 吗？")
+            .setPositiveButton("删除", (dialog, which) -> {
+                conversationHistory.remove(index);
+                // 如果删除的是当前对话
+                if (currentIndex == index) {
+                    currentIndex = -1;
+                    messages.clear();
+                    renderMessages();
+                } else if (currentIndex > index) {
+                    currentIndex--;
+                }
+                saveAllConversations();
+                // 刷新菜单
+                refreshHistory();
+                Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
+            })
+            .setNegativeButton("取消", null)
+            .show();
+}private void applyBackground() {
+    Bitmap bg = themeHelper.getBackground();
+    if (bg != null) {
+        bgImage.setImageBitmap(bg);
+        bgImage.setBackgroundColor(Color.TRANSPARENT);
+        int alpha = (int) (bgAlpha / 100.0 * 255);
+        bgImage.setAlpha(alpha);
+    } else {
+        bgImage.setImageDrawable(null);
+        if (themeHelper.isDarkMode()) {
+            bgImage.setBackgroundColor(Color.parseColor("#303030"));
+        } else {
+            bgImage.setBackgroundColor(Color.parseColor("#F5F5F5"));
+        }
+        bgImage.setAlpha(255);
+    }
+}
+
+@Override
+protected void onResume() {
+    super.onResume();
+    bgAlpha = themeHelper.getBgAlpha();
+    applyBackground();
+    if (tvStatus != null) {
+        String modelName = settingsHelper.getModel();
+        tvStatus.setText(modelName != null && !modelName.isEmpty() ? modelName : "未配置");
+    }
+    renderMessages();
+}
+
+private String formatTime(long timestamp) {
+    if (timestamp == 0) {
+        return "刚刚";
+    }
+    java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
+    return sdf.format(new java.util.Date(timestamp));
+}
+
+private void renderMessages() {
+    chatContainer.removeAllViews();
+
+    if (messages.isEmpty()) {
+        TextView emptyHint = new TextView(this);
+        emptyHint.setText("欢迎使用 AI Chat\n请输入消息开始对话");
+        emptyHint.setTextSize(14);
+        emptyHint.setTextColor(Color.parseColor("#999999"));
+        emptyHint.setGravity(Gravity.CENTER);
+        emptyHint.setPadding(0, 40, 0, 40);
+        chatContainer.addView(emptyHint);
+        return;
+    }
+
+    for (int i = 0; i < messages.size(); i++) {
+        ChatMessage msg = messages.get(i);
+        boolean isUser = msg.getRole().equals("user");
+
+        LinearLayout wrapper = new LinearLayout(this);
+        wrapper.setOrientation(LinearLayout.VERTICAL);
+        wrapper.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+        if (isUser) {
+            wrapper.setGravity(Gravity.END);
+        } else {
+            wrapper.setGravity(Gravity.START);
+        }
+
+        TextView bubble = createBubble(msg.getContent(), isUser);
+        final int position = i;
+        bubble.setOnLongClickListener(v -> {
+            showMessageMenu(position);
+            return true;
+        });
+        wrapper.addView(bubble);
+
+        TextView timeView = new TextView(this);
+        timeView.setText(formatTime(msg.getTimestamp()));
+        timeView.setTextSize(10);
+        timeView.setTextColor(Color.parseColor("#999999"));
+        timeView.setPadding(4, 4, 4, 4);
+        if (isUser) {
+            timeView.setGravity(Gravity.END);
+        } else {
+            timeView.setGravity(Gravity.START);
+        }
+        wrapper.addView(timeView);
+
+        chatContainer.addView(wrapper);
+    }
+
+    scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+}
+
+private TextView createBubble(String text, boolean isUser) {
+    TextView bubble = new TextView(this);
+    bubble.setText(text);
+    bubble.setTextSize(14);
+    bubble.setPadding(14, 10, 14, 10);
+    bubble.setMaxWidth((int) (getResources().getDisplayMetrics().widthPixels * 0.7));
+
+    GradientDrawable drawable = new GradientDrawable();
+    drawable.setCornerRadius(18);
+    if (isUser) {
+        drawable.setColor(Color.parseColor("#BB007AFF"));
+        bubble.setTextColor(Color.WHITE);
+    } else {
+        drawable.setColor(Color.parseColor("#BBE5E5EA"));
+        bubble.setTextColor(Color.BLACK);
+    }
+    bubble.setBackground(drawable);
+
+    LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+    );
+    params.setMargins(isUser ? 30 : 0, 4, isUser ? 0 : 30, 4);
+    bubble.setLayoutParams(params);
+
+    return bubble;
+}
+
+// ----- 长按消息菜单 -----
+private void showMessageMenu(final int position) {
+    if (position < 0 || position >= messages.size()) return;
+    final ChatMessage msg = messages.get(position);
+    if (msg.getContent().startsWith("[超时]") || msg.getContent().startsWith("[错误]") || msg.getContent().startsWith("[系统错误]")) {
+        Toast.makeText(this, "错误消息不支持操作", Toast.LENGTH_SHORT).show();
+        return;
+    }
+
+    final String[] options;
+    final boolean isAi = msg.getRole().equals("ai");
+    if (isAi) {
+        options = new String[]{"复制", "重新生成", "删除"};
+    } else {
+        options = new String[]{"复制", "删除"};
+    }
+
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    builder.setTitle("选择操作");
+    builder.setItems(options, (dialog, which) -> {
+        String selected = options[which];
+        if ("复制".equals(selected)) {
+            copyMessage(msg.getContent());
+        } else if ("重新生成".equals(selected)) {
+            regenerateMessage(position);
+        } else if ("删除".equals(selected)) {
+            deleteMessage(position);
+        }
+    });
+    builder.show();
+}
+
+private void copyMessage(String content) {
+    ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+    ClipData clip = ClipData.newPlainText("ChatMessage", content);
+    clipboard.setPrimaryClip(clip);
+    Toast.makeText(this, "已复制到剪贴板", Toast.LENGTH_SHORT).show();
+}
+
+private void deleteMessage(int position) {
+    if (position < 0 || position >= messages.size()) return;
+    messages.remove(position);
+    saveAllConversations();
+    renderMessages();
+    Toast.makeText(this, "消息已删除", Toast.LENGTH_SHORT).show();
+}
+
+private void regenerateMessage(int position) {
+    if (position < 0 || position >= messages.size()) return;
+    if (!messages.get(position).getRole().equals("ai")) {
+        Toast.makeText(this, "只能重新生成AI回复", Toast.LENGTH_SHORT).show();
+        return;
+    }
+
+    int userMsgIndex = -1;
+    for (int i = position - 1; i >= 0; i--) {
+        if (messages.get(i).getRole().equals("user")) {
+            userMsgIndex = i;
+            break;
+        }
+    }
+    if (userMsgIndex == -1) {
+        Toast.makeText(this, "没有找到对应的用户消息", Toast.LENGTH_SHORT).show();
+        return;
+    }
+
+    messages.remove(position);
+    int currentSize = messages.size();
+    if (position < currentSize) {
+        messages.subList(position, currentSize).clear();
+    }
+    messages.add(new ChatMessage("ai", ""));
+    final int newAiIndex = messages.size() - 1;
+    saveAllConversations();
+    renderMessages();
+
+    setLoading(true);
+    waitingForResponse = true;
+    timeoutRunnable = () -> {
+        if (waitingForResponse) {
+            waitingForResponse = false;
+            setLoading(false);
+            messages.set(newAiIndex, new ChatMessage("ai", "[超时] 请求超时，请检查网络或重试"));
+            saveAllConversations();
+            renderMessages();
+            Toast.makeText(MainActivity.this, "请求超时", Toast.LENGTH_LONG).show();
+        }
+    };
+    timeoutHandler.postDelayed(timeoutRunnable, 30000);
+
+    String baseUrl = settingsHelper.getBaseUrl();
+    String apiKey = settingsHelper.getApiKey();
+    String model = settingsHelper.getModel();
+
+    apiHelper.sendMessage(baseUrl, apiKey, model, messages, new ApiHelper.ChatCallback() {
+        @Override
+        public void onSuccess(String response) {
+            runOnUiThread(() -> {
+                waitingForResponse = false;
+                if (timeoutRunnable != null) {
+                    timeoutHandler.removeCallbacks(timeoutRunnable);
+                }
+                setLoading(false);
+                if (!messages.isEmpty()) {
+                    messages.set(newAiIndex, new ChatMessage("ai", response));
+                    saveAllConversations();
+                    renderMessages();
+                    scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
+                }
+            });
+        }
+
+        @Override
+        public void onChunk(String chunk) {
+            runOnUiThread(() -> {
+                if (!messages.isEmpty()) {
+                    String current = messages.get(newAiIndex).getContent();
+                    messages.set(newAiIndex, new ChatMessage("ai", current + chunk));
+                    renderMessages();
+                    scrollView.post(() -> scrollView.fullScroll
