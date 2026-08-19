@@ -55,11 +55,12 @@ public class MainActivity extends Activity {
     private ThemeHelper themeHelper;
     private FrameLayout mainLayout;
     private ImageView bgImage;
+    private int bgAlpha = 100; // 默认不透明
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // 沉浸式状态栏
+        // 沉浸式
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
@@ -70,20 +71,17 @@ public class MainActivity extends Activity {
         themeHelper = new ThemeHelper(this);
         settingsHelper = new SettingsHelper(this);
         apiHelper = new ApiHelper();
+        bgAlpha = themeHelper.getBgAlpha();
 
         loadHistory();
 
-        // 主布局 FrameLayout（用于叠加背景图）
         mainLayout = new FrameLayout(this);
-
-        // 背景图 ImageView（centerCrop）
         bgImage = new ImageView(this);
         bgImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
         bgImage.setLayoutParams(new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
         ));
-        // 设置背景色（深色或浅色）
         if (themeHelper.isDarkMode()) {
             bgImage.setBackgroundColor(Color.parseColor("#303030"));
         } else {
@@ -91,26 +89,20 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
-        // 内容层（半透明覆盖，保证文字可读）
+        // 内容层
         FrameLayout contentLayer = new FrameLayout(this);
         contentLayer.setLayoutParams(new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
         ));
-        // 半透明背景，让文字清晰
-        contentLayer.setBackgroundColor(Color.parseColor("#00FFFFFF")); // 完全透明，靠背景图
 
-        // 构建聊天UI
         LinearLayout chatUI = buildChatUI();
         contentLayer.addView(chatUI);
 
         mainLayout.addView(contentLayer);
         setContentView(mainLayout);
 
-        // 应用背景图片
         applyBackground();
-
-        // 渲染消息
         renderMessages();
         timeoutHandler = new Handler();
 
@@ -119,18 +111,15 @@ public class MainActivity extends Activity {
                 if (timeoutRunnable != null) {
                     timeoutHandler.removeCallbacks(timeoutRunnable);
                 }
-
                 String input = etInput.getText().toString().trim();
                 if (input.isEmpty()) {
                     Toast.makeText(this, "请输入消息", Toast.LENGTH_SHORT).show();
                     return;
                 }
-
                 if (!settingsHelper.hasSettings()) {
                     Toast.makeText(this, "请先进入设置配置 API", Toast.LENGTH_LONG).show();
                     return;
                 }
-
                 messages.add(new ChatMessage("user", input));
                 saveHistory();
                 renderMessages();
@@ -211,18 +200,17 @@ public class MainActivity extends Activity {
     private LinearLayout buildChatUI() {
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
-        main.setPadding(16, 40, 16, 16); // 顶部留出状态栏空间（沉浸式）
+        main.setPadding(16, 40, 16, 12); // 顶部留出状态栏
 
-        // 顶部状态栏（显示模型名称和设置按钮）
+        // 顶部栏（模型名称 + 按钮）
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        topBar.setPadding(0, 0, 0, 12);
+        topBar.setPadding(0, 8, 0, 12);
 
-        // 模型名称（替代AI Chat）
         tvStatus = new TextView(this);
         tvStatus.setText(getStatusText());
-        tvStatus.setTextSize(14);
+        tvStatus.setTextSize(24);
         tvStatus.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
@@ -245,7 +233,7 @@ public class MainActivity extends Activity {
 
         main.addView(topBar);
 
-        // 聊天容器（滚动）
+        // 聊天容器
         scrollView = new ScrollView(this);
         scrollView.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -260,16 +248,24 @@ public class MainActivity extends Activity {
         scrollView.addView(chatContainer);
         main.addView(scrollView);
 
-        // 输入区域（毛玻璃效果）
+        // 输入区域（毛玻璃）
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
-        inputLayout.setPadding(8, 16, 8, 16);
-        inputLayout.setBackground(createGlassBackground());
+        inputLayout.setPadding(8, 10, 8, 10); // 减少垂直间距
+        GradientDrawable glass = new GradientDrawable();
+        glass.setCornerRadius(24);
+        if (themeHelper.isDarkMode()) {
+            glass.setColor(Color.parseColor("#88222222"));
+        } else {
+            glass.setColor(Color.parseColor("#CCFFFFFF"));
+        }
+        glass.setStroke(1, themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44AAAAAA"));
+        inputLayout.setBackground(glass);
 
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(16, 12, 16, 12);
+        etInput.setPadding(16, 10, 16, 10);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
         etInput.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
@@ -279,7 +275,7 @@ public class MainActivity extends Activity {
         btnSend.setText("发送");
         btnSend.setBackgroundColor(Color.parseColor("#007AFF"));
         btnSend.setTextColor(Color.WHITE);
-        btnSend.setPadding(24, 12, 24, 12);
+        btnSend.setPadding(20, 10, 20, 10);
         GradientDrawable btnShape = new GradientDrawable();
         btnShape.setCornerRadius(20);
         btnShape.setColor(Color.parseColor("#007AFF"));
@@ -288,7 +284,6 @@ public class MainActivity extends Activity {
 
         main.addView(inputLayout);
 
-        // 进度条
         progressBar = new ProgressBar(this);
         progressBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -300,39 +295,30 @@ public class MainActivity extends Activity {
         return main;
     }
 
-    private GradientDrawable createGlassBackground() {
-        GradientDrawable glass = new GradientDrawable();
-        glass.setCornerRadius(24);
-        if (themeHelper.isDarkMode()) {
-            glass.setColor(Color.parseColor("#66222222"));
-        } else {
-            glass.setColor(Color.parseColor("#CCFFFFFF"));
-        }
-        glass.setStroke(1, themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44AAAAAA"));
-        return glass;
-    }
-
     private void applyBackground() {
         Bitmap bg = themeHelper.getBackground();
         if (bg != null) {
             bgImage.setImageBitmap(bg);
-            // 背景色设为透明，因为图片会覆盖
             bgImage.setBackgroundColor(Color.TRANSPARENT);
+            // 应用透明度
+            int alpha = (int) (bgAlpha / 100.0 * 255);
+            bgImage.setAlpha(alpha);
         } else {
-            // 无图片时使用颜色
             bgImage.setImageDrawable(null);
             if (themeHelper.isDarkMode()) {
                 bgImage.setBackgroundColor(Color.parseColor("#303030"));
             } else {
                 bgImage.setBackgroundColor(Color.parseColor("#F5F5F5"));
             }
+            bgImage.setAlpha(255);
         }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        applyBackground(); // 重新应用背景（可能设置变化）
+        bgAlpha = themeHelper.getBgAlpha();
+        applyBackground();
         if (tvStatus != null) {
             tvStatus.setText(getStatusText());
         }
@@ -367,14 +353,6 @@ public class MainActivity extends Activity {
 
         for (ChatMessage msg : messages) {
             boolean isUser = msg.getRole().equals("user");
-
-            LinearLayout wrapper = new LinearLayout(this);
-            wrapper.setOrientation(LinearLayout.VERTICAL);
-            wrapper.setLayoutParams(new LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-            ));
-
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.HORIZONTAL);
             row.setGravity(Gravity.CENTER_VERTICAL);
@@ -383,22 +361,15 @@ public class MainActivity extends Activity {
                     ViewGroup.LayoutParams.WRAP_CONTENT
             ));
 
+            TextView bubble = createBubble(msg.getContent(), isUser);
             if (isUser) {
                 row.setGravity(Gravity.END);
-                TextView bubble = createBubble(msg.getContent(), true);
                 row.addView(bubble);
-                TextView avatar = createAvatar("我", true);
-                row.addView(avatar);
             } else {
                 row.setGravity(Gravity.START);
-                TextView avatar = createAvatar("AI", false);
-                row.addView(avatar);
-                TextView bubble = createBubble(msg.getContent(), false);
                 row.addView(bubble);
             }
-
-            wrapper.addView(row);
-            chatContainer.addView(wrapper);
+            chatContainer.addView(row);
         }
 
         scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
@@ -413,11 +384,12 @@ public class MainActivity extends Activity {
 
         GradientDrawable drawable = new GradientDrawable();
         drawable.setCornerRadius(18);
+        // 毛玻璃效果：半透明白色/深色
         if (isUser) {
-            drawable.setColor(Color.parseColor("#007AFF"));
+            drawable.setColor(Color.parseColor("#BB007AFF"));
             bubble.setTextColor(Color.WHITE);
         } else {
-            drawable.setColor(Color.parseColor("#E5E5EA"));
+            drawable.setColor(Color.parseColor("#BBE5E5EA"));
             bubble.setTextColor(Color.BLACK);
         }
         bubble.setBackground(drawable);
@@ -430,28 +402,6 @@ public class MainActivity extends Activity {
         bubble.setLayoutParams(params);
 
         return bubble;
-    }
-
-    private TextView createAvatar(String label, boolean isUser) {
-        TextView avatar = new TextView(this);
-        avatar.setText(label);
-        avatar.setTextSize(11);
-        avatar.setTextColor(Color.WHITE);
-        avatar.setGravity(Gravity.CENTER);
-        avatar.setPadding(4, 4, 4, 4);
-
-        GradientDrawable circle = new GradientDrawable();
-        circle.setShape(GradientDrawable.OVAL);
-        circle.setColor(isUser ? Color.parseColor("#007AFF") : Color.parseColor("#34C759"));
-        avatar.setBackground(circle);
-
-        // 确保宽高相等（正圆）
-        int size = 30;
-        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(size, size);
-        params.setMargins(isUser ? 4 : 0, 0, isUser ? 0 : 4, 0);
-        avatar.setLayoutParams(params);
-
-        return avatar;
     }
 
     @Override
