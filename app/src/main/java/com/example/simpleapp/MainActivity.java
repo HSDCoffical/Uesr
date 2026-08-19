@@ -51,12 +51,11 @@ import java.util.List;
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
     private static final String PREFS_NAME = "chat_prefs";
-    private static final String KEY_HISTORY = "chat_history";
-    private static final String KEY_CONVERSATIONS = "conversations"; // 新增：存储所有对话
-    private static final String KEY_CURRENT_INDEX = "current_index"; // 当前对话索引
+    private static final String KEY_CONVERSATIONS = "conversations";
+    private static final String KEY_CURRENT_INDEX = "current_index";
     private static final int REQUEST_CODE_SAVE_FILE = 1004;
 
-    // 内部类：对话对象
+    // 对话对象
     public static class Conversation {
         public String title;
         public List<ChatMessage> messages;
@@ -72,15 +71,15 @@ public class MainActivity extends Activity {
     private EditText etInput;
     private Button btnSend;
     private ProgressBar progressBar;
-    private TextView tvStatus;          // 模型名称（顶部）
+    private TextView tvStatus;
     private ScrollView scrollView;
     private Handler timeoutHandler;
     private Runnable timeoutRunnable;
     private boolean waitingForResponse = false;
 
-    private List<ChatMessage> messages = new ArrayList<>(); // 当前对话消息
-    private List<Conversation> conversationHistory = new ArrayList<>(); // 所有保存的对话
-    private int currentIndex = -1; // 当前对话在历史中的索引（-1表示未保存的新对话）
+    private List<ChatMessage> messages = new ArrayList<>();
+    private List<Conversation> conversationHistory = new ArrayList<>();
+    private int currentIndex = -1;
 
     private Gson gson = new Gson();
     private ThemeHelper themeHelper;
@@ -91,6 +90,7 @@ public class MainActivity extends Activity {
     // 菜单相关
     private FrameLayout menuContainer;
     private LinearLayout menuPanel;
+    private LinearLayout historyContainer; // 历史条目容器
     private boolean isMenuOpen = false;
 
     // 状态栏高度
@@ -124,7 +124,6 @@ public class MainActivity extends Activity {
         apiHelper = new ApiHelper();
         bgAlpha = themeHelper.getBgAlpha();
 
-        // 加载对话历史和当前索引
         loadAllConversations();
         loadCurrentIndex();
 
@@ -144,7 +143,7 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
-        // 状态栏白色背景：恢复为状态栏高度的2倍
+        // 状态栏白色背景：高度为状态栏高度的2倍
         View statusBarView = new View(this);
         statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -186,17 +185,8 @@ public class MainActivity extends Activity {
                     return;
                 }
 
-                // 如果当前是空对话且未保存，则自动保存为新对话（标题由第一条消息决定）
-                if (currentIndex == -1 && messages.isEmpty()) {
-                    // 标题暂不生成，等发送后由 generateTitle 生成并保存
-                }
-
                 messages.add(new ChatMessage("user", input));
-                // 如果还没有标题，生成标题
-                if (currentIndex == -1) {
-                    // 新建对话时保存
-                    saveCurrentConversation();
-                }
+                // 自动保存对话
                 saveAllConversations();
                 renderMessages();
 
@@ -302,7 +292,7 @@ public class MainActivity extends Activity {
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        int topPadding = statusBarHeight * 2 - dpToPx(12); // 让模型名称在白色区域内
+        int topPadding = statusBarHeight * 2 - dpToPx(12);
         topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -495,33 +485,29 @@ public class MainActivity extends Activity {
     divider4.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
     menuPanel.addView(divider4);
 
-    // 对话历史区域（动态生成）
-    LinearLayout historyHeader = new LinearLayout(this);
-    historyHeader.setOrientation(LinearLayout.HORIZONTAL);
-    historyHeader.setPadding(16, 16, 16, 12);
-    historyHeader.setLayoutParams(new LinearLayout.LayoutParams(
+    // 对话历史标题
+    LinearLayout headerRow = new LinearLayout(this);
+    headerRow.setOrientation(LinearLayout.HORIZONTAL);
+    headerRow.setPadding(16, 16, 16, 8);
+    headerRow.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
     ));
     TextView headerLabel = new TextView(this);
     headerLabel.setText("对话历史");
-    headerLabel.setTextSize(16);
+    headerLabel.setTextSize(14);
     headerLabel.setTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
-    historyHeader.addView(headerLabel);
-    menuPanel.addView(historyHeader);
+    headerRow.addView(headerLabel);
+    menuPanel.addView(headerRow);
 
-    // 列出所有保存的对话
-    for (int i = 0; i < conversationHistory.size(); i++) {
-        final int index = i;
-        Conversation conv = conversationHistory.get(i);
-        String title = conv.title != null && !conv.title.isEmpty() ? conv.title : "无标题";
-        LinearLayout itemHistory = createMenuItem(title);
-        itemHistory.setOnClickListener(v -> {
-            closeMenu();
-            loadConversation(index);
-        });
-        menuPanel.addView(itemHistory);
-    }
+    // 历史条目容器（动态填充）
+    historyContainer = new LinearLayout(this);
+    historyContainer.setOrientation(LinearLayout.VERTICAL);
+    historyContainer.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+    ));
+    menuPanel.addView(historyContainer);
 
     // 底部空白区域
     View closeArea = new View(this);
@@ -578,8 +564,8 @@ private void toggleMenu() {
 
 private void openMenu() {
     if (menuContainer == null) return;
-    // 刷新对话历史列表（每次打开时更新）
-    refreshHistoryMenu();
+    // 刷新历史列表
+    refreshHistory();
     menuContainer.setVisibility(View.VISIBLE);
     AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
     fadeIn.setDuration(300);
@@ -625,37 +611,37 @@ private void closeMenu() {
     isMenuOpen = false;
 }
 
-// 刷新菜单中的对话历史部分（重建）
-private void refreshHistoryMenu() {
-    // 由于我们动态添加，最简单是移除旧的“对话历史”区域再重建
-    // 但因为菜单结构固定，我们可以在打开时重新创建整个菜单？但复杂。
-    // 更好的方法：在 openMenu 前调用此方法重建 history 部分。
-    // 但我们不能直接操作 menuPanel，因为已有其他项。
-    // 简便方法：在 openMenu 时重新加载整个菜单，但会闪烁。
-    // 更简单：在 setupMenu 时只添加一次，每次更新时重新设置内容。
-    // 我们重新设计：在 openMenu 中重建整个菜单？
-    // 但为了简单，我们在 openMenu 中调用一个方法重建菜单内容。
-    // 但当前 setupMenu 已经构建了固定部分，我们可以在 setupMenu 之后动态添加。
-    // 为减少改动，我们采用另一种方式：在菜单中增加一个“刷新”概念，但用户会混淆。
-    // 采用常用方案：每次打开菜单时，移除旧的对话历史部分，重新添加。
-    // 但我们无法轻易移除已添加的 view，因为它们是动态添加的。
-    // 最简单的解决方案：将对话历史部分放在 menuPanel 末尾（在 closeArea 之前），每次 openMenu 时先移除这些 view。
-    // 我们维护一个列表保存所有历史条目 view，然后在 openMenu 时移除并重建。
-    // 但由于时间，我们采用一种简单且稳定的方法：将整个 menuPanel 清空并重建？
-    // 但会丢失其他项目。更好的方法：在 menuPanel 中添加一个 LinearLayout 专门放历史条目。
-    // 我们修改 setupMenu：在 closeArea 之前添加一个 LinearLayout 作为历史容器。
-    // 这样可以只更新这个容器。
-    // 下面我们快速修改 setupMenu，增加一个 LinearLayout 用于历史。
-    // 但我们现在没有时间重写第一批，我们可以提供一个快速修复：在 openMenu 中重新加载所有菜单。
-    // 考虑到用户复制代码不便，我们提供一个简单的方案：每次打开菜单时，整个菜单重新创建。
-    // 但这会破坏滑入动画。
-    // 我们采用简单方案：每次打开菜单时调用 setupMenu 重新构建，但这会丢失点击事件。
-    // 实际上，我们可以在 openMenu 中直接调用 setupMenu，但会重复添加。
-    // 所以最好的方式是在 setupMenu 时，为历史部分保留一个容器，然后更新。
-    // 我们快速修改 setupMenu，添加一个 LinearLayout 容器专门放历史。
-    // 由于第一批已经发送，我们只能提供第二批的修改补丁。
-    // 我将在第三批提供额外的修改。
-    // 但是由于回复限制，我直接在第三批中给出完整的解决方法。
+// 刷新对话历史列表
+private void refreshHistory() {
+    if (historyContainer == null) return;
+    historyContainer.removeAllViews();
+
+    if (conversationHistory.isEmpty()) {
+        TextView empty = new TextView(this);
+        empty.setText("暂无对话");
+        empty.setTextSize(14);
+        empty.setTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
+        empty.setPadding(16, 12, 16, 12);
+        historyContainer.addView(empty);
+        return;
+    }
+
+    for (int i = 0; i < conversationHistory.size(); i++) {
+        final int index = i;
+        Conversation conv = conversationHistory.get(i);
+        String title = conv.title != null && !conv.title.isEmpty() ? conv.title : "无标题";
+        LinearLayout item = createMenuItem(title);
+        // 高亮当前对话
+        if (currentIndex == i) {
+            item.setBackgroundColor(Color.parseColor("#33007AFF"));
+        }
+        final int finalIndex = i;
+        item.setOnClickListener(v -> {
+            closeMenu();
+            loadConversation(finalIndex);
+        });
+        historyContainer.addView(item);
+    }
 }private void applyBackground() {
     Bitmap bg = themeHelper.getBackground();
     if (bg != null) {
@@ -778,7 +764,7 @@ private TextView createBubble(String text, boolean isUser) {
     return bubble;
 }
 
-// ----- 长按菜单功能 -----
+// ----- 长按菜单 -----
 private void showMessageMenu(final int position) {
     if (position < 0 || position >= messages.size()) return;
     final ChatMessage msg = messages.get(position);
@@ -921,26 +907,32 @@ private void regenerateMessage(int position) {
     });
 }
 
-// ----- 对话管理（存储/加载/切换） -----
+// ----- 对话管理 -----
+private String generateTitle(List<ChatMessage> msgs) {
+    for (ChatMessage msg : msgs) {
+        if (msg.getRole().equals("user")) {
+            String text = msg.getContent();
+            if (text.length() <= 20) return text;
+            return text.substring(0, 20) + "...";
+        }
+    }
+    return "新对话";
+}
+
 private void saveAllConversations() {
     SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-    // 如果当前对话有消息，更新或添加到历史
     if (!messages.isEmpty()) {
-        // 如果当前索引为-1，则视为新对话，先添加到历史列表（但此时可能还没标题，用第一条用户消息作为标题）
         if (currentIndex == -1) {
-            String title = generateTitleFromMessages(messages);
+            String title = generateTitle(messages);
             Conversation conv = new Conversation(title, new ArrayList<>(messages));
             conversationHistory.add(conv);
             currentIndex = conversationHistory.size() - 1;
         } else {
-            // 更新现有对话
             conversationHistory.get(currentIndex).messages = new ArrayList<>(messages);
-            // 更新标题
-            String title = generateTitleFromMessages(messages);
+            String title = generateTitle(messages);
             conversationHistory.get(currentIndex).title = title;
         }
     }
-    // 保存整个列表
     String json = gson.toJson(conversationHistory);
     prefs.edit().putString(KEY_CONVERSATIONS, json)
             .putInt(KEY_CURRENT_INDEX, currentIndex)
@@ -963,28 +955,15 @@ private void loadCurrentIndex() {
     SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
     currentIndex = prefs.getInt(KEY_CURRENT_INDEX, -1);
     if (currentIndex >= 0 && currentIndex < conversationHistory.size()) {
-        // 加载该对话的消息
         Conversation conv = conversationHistory.get(currentIndex);
         messages = new ArrayList<>(conv.messages);
     } else {
         messages.clear();
         currentIndex = -1;
     }
-    // 如果没有消息，重置索引
     if (messages.isEmpty()) {
         currentIndex = -1;
     }
-}
-
-private String generateTitleFromMessages(List<ChatMessage> msgs) {
-    for (ChatMessage msg : msgs) {
-        if (msg.getRole().equals("user")) {
-            String text = msg.getContent();
-            if (text.length() <= 20) return text;
-            return text.substring(0, 20) + "...";
-        }
-    }
-    return "新对话";
 }
 
 private void loadConversation(int index) {
@@ -992,26 +971,24 @@ private void loadConversation(int index) {
     Conversation conv = conversationHistory.get(index);
     messages = new ArrayList<>(conv.messages);
     currentIndex = index;
-    saveAllConversations(); // 更新当前索引
+    saveAllConversations();
     renderMessages();
     Toast.makeText(this, "已切换到: " + conv.title, Toast.LENGTH_SHORT).show();
 }
 
 private void newConversation() {
-    // 保存当前对话到历史（如果非空）
     if (!messages.isEmpty()) {
         if (currentIndex == -1) {
-            String title = generateTitleFromMessages(messages);
+            String title = generateTitle(messages);
             Conversation conv = new Conversation(title, new ArrayList<>(messages));
             conversationHistory.add(conv);
         } else {
             conversationHistory.get(currentIndex).messages = new ArrayList<>(messages);
-            String title = generateTitleFromMessages(messages);
+            String title = generateTitle(messages);
             conversationHistory.get(currentIndex).title = title;
         }
         saveAllConversations();
     }
-    // 创建新对话
     messages.clear();
     currentIndex = -1;
     saveAllConversations();
@@ -1019,7 +996,7 @@ private void newConversation() {
     Toast.makeText(this, "已创建新对话", Toast.LENGTH_SHORT).show();
 }
 
-// ----- 导出对话（使用系统文件选择器） -----
+// ----- 导出对话 -----
 private String exportContent;
 
 private void exportChat() {
