@@ -346,16 +346,18 @@ public class MainActivity extends Activity {
 
         return main;
     }private void setupMenu(FrameLayout parent) {
+    // 左侧遮罩容器（保留变暗效果）
     menuContainer = new FrameLayout(this);
     menuContainer.setLayoutParams(new FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
     ));
-    // 背景改为纯白
-    menuContainer.setBackgroundColor(Color.WHITE);
+    // 半透明黑色背景，使左侧变暗
+    menuContainer.setBackgroundColor(Color.parseColor("#66000000"));
     menuContainer.setVisibility(View.GONE);
     menuContainer.setOnClickListener(v -> closeMenu());
 
+    // 右侧菜单面板（纯白背景）
     menuPanel = new LinearLayout(this);
     menuPanel.setOrientation(LinearLayout.VERTICAL);
     menuPanel.setGravity(Gravity.TOP | Gravity.END);
@@ -366,7 +368,8 @@ public class MainActivity extends Activity {
     );
     panelParams.gravity = Gravity.END;
     menuPanel.setLayoutParams(panelParams);
-    menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
+    // 右侧面板纯白背景
+    menuPanel.setBackgroundColor(Color.WHITE);
     menuPanel.setPadding(20, 80, 20, 20);
 
     // 菜单项1：设置
@@ -411,23 +414,23 @@ private LinearLayout createMenuItem(String text) {
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
     ));
-    // 分割线（保留，但颜色调淡）
+    // 分割线（颜色调淡）
     GradientDrawable divider = new GradientDrawable();
-    divider.setColor(themeHelper.isDarkMode() ? Color.parseColor("#22FFFFFF") : Color.parseColor("#22000000"));
+    divider.setColor(Color.parseColor("#22000000"));
     divider.setSize(0, 1);
     item.setBackground(divider);
 
     TextView label = new TextView(this);
     label.setText(text);
     label.setTextSize(18);
-    label.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+    label.setTextColor(Color.BLACK);
     label.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
     item.addView(label);
 
     TextView arrow = new TextView(this);
     arrow.setText(">");
     arrow.setTextSize(18);
-    arrow.setTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
+    arrow.setTextColor(Color.parseColor("#999999"));
     arrow.setPadding(16, 0, 0, 0);
     item.addView(arrow);
 
@@ -445,12 +448,12 @@ private void toggleMenu() {
 private void openMenu() {
     if (menuContainer == null) return;
     menuContainer.setVisibility(View.VISIBLE);
-    // 渐显动画
+    // 遮罩渐显动画（左侧变暗效果）
     AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
     fadeIn.setDuration(300);
     fadeIn.setInterpolator(new AccelerateDecelerateInterpolator());
     menuContainer.startAnimation(fadeIn);
-    // 滑入动画
+    // 右侧面板滑入动画
     TranslateAnimation slideIn = new TranslateAnimation(
             Animation.RELATIVE_TO_SELF, 1.0f,
             Animation.RELATIVE_TO_SELF, 0.0f,
@@ -465,7 +468,7 @@ private void openMenu() {
 
 private void closeMenu() {
     if (menuContainer == null) return;
-    // 渐隐动画
+    // 遮罩渐隐动画
     AlphaAnimation fadeOut = new AlphaAnimation(1.0f, 0.0f);
     fadeOut.setDuration(300);
     fadeOut.setInterpolator(new AccelerateDecelerateInterpolator());
@@ -480,7 +483,7 @@ private void closeMenu() {
         public void onAnimationRepeat(Animation animation) {}
     });
     menuContainer.startAnimation(fadeOut);
-    // 滑出动画
+    // 右侧面板滑出动画
     TranslateAnimation slideOut = new TranslateAnimation(
             Animation.RELATIVE_TO_SELF, 0.0f,
             Animation.RELATIVE_TO_SELF, 1.0f,
