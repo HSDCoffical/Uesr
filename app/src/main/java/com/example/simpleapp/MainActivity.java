@@ -405,7 +405,8 @@ public class MainActivity extends Activity {
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.MATCH_PARENT
     ));
-    menuContainer.setBackgroundColor(Color.parseColor("#66000000"));
+    // 遮罩改为半透明白色（保留一点遮罩效果）
+    menuContainer.setBackgroundColor(Color.parseColor("#44FFFFFF"));
     menuContainer.setVisibility(View.GONE);
     menuContainer.setOnClickListener(v -> closeMenu());
 
@@ -419,8 +420,10 @@ public class MainActivity extends Activity {
     );
     panelParams.gravity = Gravity.END;
     menuPanel.setLayoutParams(panelParams);
-    menuPanel.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#DD333333") : Color.parseColor("#DDEEEEEE"));
-    menuPanel.setPadding(20, 100, 20, 20);
+    // 纯白背景
+    menuPanel.setBackgroundColor(Color.WHITE);
+    // 顶部间距从 100 改为 130，向下移动
+    menuPanel.setPadding(20, 130, 20, 20);
 
     LinearLayout itemSettings = createMenuItem("设置");
     itemSettings.setOnClickListener(v -> {
@@ -435,7 +438,7 @@ public class MainActivity extends Activity {
             ViewGroup.LayoutParams.MATCH_PARENT,
             dpToPx(1)
     ));
-    divider1.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
+    divider1.setBackgroundColor(Color.parseColor("#44000000"));
     menuPanel.addView(divider1);
 
     LinearLayout itemClear = createMenuItem("清空");
@@ -453,7 +456,7 @@ public class MainActivity extends Activity {
             ViewGroup.LayoutParams.MATCH_PARENT,
             dpToPx(1)
     ));
-    divider2.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
+    divider2.setBackgroundColor(Color.parseColor("#44000000"));
     menuPanel.addView(divider2);
 
     LinearLayout itemExport = createMenuItem("导出对话");
@@ -468,7 +471,7 @@ public class MainActivity extends Activity {
             ViewGroup.LayoutParams.MATCH_PARENT,
             dpToPx(1)
     ));
-    divider3.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
+    divider3.setBackgroundColor(Color.parseColor("#44000000"));
     menuPanel.addView(divider3);
 
     LinearLayout itemNewChat = createMenuItem("新建对话");
@@ -483,7 +486,7 @@ public class MainActivity extends Activity {
             ViewGroup.LayoutParams.MATCH_PARENT,
             dpToPx(1)
     ));
-    divider4.setBackgroundColor(themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44000000"));
+    divider4.setBackgroundColor(Color.parseColor("#44000000"));
     menuPanel.addView(divider4);
 
     LinearLayout headerRow = new LinearLayout(this);
@@ -496,7 +499,7 @@ public class MainActivity extends Activity {
     TextView headerLabel = new TextView(this);
     headerLabel.setText("对话历史");
     headerLabel.setTextSize(14);
-    headerLabel.setTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
+    headerLabel.setTextColor(Color.GRAY);
     headerRow.addView(headerLabel);
     menuPanel.addView(headerRow);
 
@@ -525,27 +528,32 @@ private LinearLayout createMenuItem(String text) {
     LinearLayout item = new LinearLayout(this);
     item.setOrientation(LinearLayout.HORIZONTAL);
     item.setGravity(Gravity.CENTER_VERTICAL);
-    item.setPadding(16, 20, 16, 20);
+    // 文字与分割线间距：上下内边距从 20 改为 24
+    item.setPadding(16, 24, 16, 24);
     item.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
     ));
+    // 取消背景深色，改为纯白（实际不需要背景，因为整体已经是纯白）
+    // 但保留圆角背景？改为透明
     GradientDrawable bg = new GradientDrawable();
     bg.setCornerRadius(dpToPx(8));
-    bg.setColor(themeHelper.isDarkMode() ? Color.parseColor("#66333333") : Color.parseColor("#88E0E0E0"));
+    bg.setColor(Color.TRANSPARENT);
     item.setBackground(bg);
 
     TextView label = new TextView(this);
     label.setText(text);
-    label.setTextSize(18);
-    label.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+    // 文字大小从 18 改为 16
+    label.setTextSize(16);
+    label.setTextColor(Color.BLACK);
     label.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
     item.addView(label);
 
     TextView arrow = new TextView(this);
     arrow.setText(">");
-    arrow.setTextSize(18);
-    arrow.setTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
+    // 箭头大小也从 18 改为 16
+    arrow.setTextSize(16);
+    arrow.setTextColor(Color.parseColor("#999999"));
     arrow.setPadding(16, 0, 0, 0);
     item.addView(arrow);
 
@@ -608,7 +616,6 @@ private void closeMenu() {
     isMenuOpen = false;
 }
 
-// ----- 刷新对话历史（支持长按删除/导出）-----
 private void refreshHistory() {
     if (historyContainer == null) return;
     historyContainer.removeAllViews();
@@ -617,7 +624,7 @@ private void refreshHistory() {
         TextView empty = new TextView(this);
         empty.setText("暂无对话");
         empty.setTextSize(14);
-        empty.setTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
+        empty.setTextColor(Color.GRAY);
         empty.setPadding(16, 12, 16, 12);
         historyContainer.addView(empty);
         return;
@@ -629,6 +636,7 @@ private void refreshHistory() {
         String title = conv.title != null && !conv.title.isEmpty() ? conv.title : "无标题";
         LinearLayout item = createMenuItem(title);
         if (currentIndex == i) {
+            // 高亮颜色改为浅蓝
             item.setBackgroundColor(Color.parseColor("#33007AFF"));
         }
         item.setOnClickListener(v -> {
@@ -847,7 +855,6 @@ private void deleteConversation(int index) {
         return bubble;
     }
 
-    // ----- 长按消息菜单 -----
     private void showMessageMenu(final int position) {
         if (position < 0 || position >= messages.size()) return;
         final ChatMessage msg = messages.get(position);
@@ -990,7 +997,6 @@ private void deleteConversation(int index) {
         });
     }
 
-    // ----- 对话管理 -----
     private String generateTitle(List<ChatMessage> msgs) {
         for (ChatMessage msg : msgs) {
             if (msg.getRole().equals("user")) {
@@ -1079,7 +1085,6 @@ private void deleteConversation(int index) {
         Toast.makeText(this, "已创建新对话", Toast.LENGTH_SHORT).show();
     }
 
-    // ----- 语音输入（Android 原生语音识别）-----
     private void startVoiceInput() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
@@ -1120,7 +1125,6 @@ private void deleteConversation(int index) {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        // 语音识别结果
         if (requestCode == REQUEST_VOICE && resultCode == RESULT_OK && data != null) {
             java.util.ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
             if (results != null && !results.isEmpty()) {
@@ -1131,7 +1135,6 @@ private void deleteConversation(int index) {
             }
             return;
         }
-        // 导出功能（原有）
         if (requestCode == REQUEST_CODE_SAVE_FILE && resultCode == RESULT_OK && data != null) {
             Uri uri = data.getData();
             if (uri != null) {
@@ -1153,7 +1156,6 @@ private void deleteConversation(int index) {
         }
     }
 
-    // ----- 导出当前对话（菜单项）-----
     private String exportContent;
 
     private void exportChat() {
