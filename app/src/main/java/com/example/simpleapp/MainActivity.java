@@ -470,7 +470,7 @@ topBar.setPadding(16, topPadding, 16, 16);
     panelParams.gravity = Gravity.END;
     menuPanel.setLayoutParams(panelParams);
     menuPanel.setBackgroundColor(Color.WHITE);
-    menuPanel.setPadding(0, 90, 0, 0);
+    menuPanel.setPadding(0, 100, 0, 0);
 
     // ----- 顶部搜索框 -----
     LinearLayout searchContainer = new LinearLayout(this);
