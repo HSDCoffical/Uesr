@@ -164,7 +164,7 @@ public class MainActivity extends Activity {
         View statusBarView = new View(this);
         statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                statusBarHeight * 3
+                statusBarHeight * 2
         ));
         statusBarView.setBackgroundColor(Color.WHITE);
         mainLayout.addView(statusBarView);
@@ -316,7 +316,7 @@ public class MainActivity extends Activity {
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        int topPadding = statusBarHeight * 2;
+         int topPadding = dpToPx(45);
         topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
