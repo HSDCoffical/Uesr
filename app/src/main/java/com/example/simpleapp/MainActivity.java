@@ -401,7 +401,8 @@ public class MainActivity extends Activity {
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(16, 14, 16, 14);
+        // 恢复原来大小：padding 从 16,14,16,14 改为 16,12,16,12
+        etInput.setPadding(16, 12, 16, 12);
         etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
@@ -427,17 +428,16 @@ public class MainActivity extends Activity {
 
         inputWrapper.addView(inputLayout);
 
-        // ========== 两个独立的悬浮按钮（每个都有毛玻璃背景） ==========
+        // ========== 两个独立的悬浮按钮（缩小一倍 + 上移 + 分开） ==========
         // AI切换按钮
         btnSwitchAI = new Button(this);
         btnSwitchAI.setText("AI");
-        btnSwitchAI.setTextSize(11);
+        btnSwitchAI.setTextSize(9); // 从 11 缩小到 9
         btnSwitchAI.setBackgroundColor(Color.TRANSPARENT);
         btnSwitchAI.setTextColor(Color.BLACK);
-        btnSwitchAI.setPadding(10, 4, 10, 4);
-        // 自身毛玻璃背景：半透明白色 + 圆角
+        btnSwitchAI.setPadding(6, 2, 6, 2); // 从 10,4,10,4 缩小到 6,2,6,2
         GradientDrawable glassBg1 = new GradientDrawable();
-        glassBg1.setCornerRadius(dpToPx(10));
+        glassBg1.setCornerRadius(dpToPx(8));
         glassBg1.setColor(Color.parseColor("#AAFFFFFF"));
         btnSwitchAI.setBackground(glassBg1);
         btnSwitchAI.setOnClickListener(v -> showModelSelector());
@@ -445,32 +445,37 @@ public class MainActivity extends Activity {
         // 语音输入按钮
         btnVoice = new Button(this);
         btnVoice.setText("🎤");
-        btnVoice.setTextSize(14);
+        btnVoice.setTextSize(11); // 从 14 缩小到 11
         btnVoice.setBackgroundColor(Color.TRANSPARENT);
-        btnVoice.setPadding(10, 4, 10, 4);
+        btnVoice.setPadding(6, 2, 6, 2); // 从 10,4,10,4 缩小到 6,2,6,2
         GradientDrawable glassBg2 = new GradientDrawable();
-        glassBg2.setCornerRadius(dpToPx(10));
+        glassBg2.setCornerRadius(dpToPx(8));
         glassBg2.setColor(Color.parseColor("#AAFFFFFF"));
         btnVoice.setBackground(glassBg2);
         btnVoice.setOnClickListener(v -> startVoiceInput());
 
-        // 将两个按钮放在一个水平LinearLayout中，但各自有背景，实现独立效果
+        // 将两个按钮放在一个水平LinearLayout中，并增加间距
         LinearLayout floatingContainer = new LinearLayout(this);
         floatingContainer.setOrientation(LinearLayout.HORIZONTAL);
         floatingContainer.setGravity(Gravity.CENTER_VERTICAL);
         floatingContainer.setPadding(0, 0, 0, 0);
-        // 容器背景透明
-        floatingContainer.setBackgroundColor(Color.TRANSPARENT);
+        // 两个按钮之间增加 6dp 间距
+        LinearLayout.LayoutParams switchParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        switchParams.setMargins(0, 0, dpToPx(6), 0);
+        btnSwitchAI.setLayoutParams(switchParams);
         floatingContainer.addView(btnSwitchAI);
         floatingContainer.addView(btnVoice);
 
-        // 位置：输入框左上角
+        // 位置：输入框左上角，上移更多
         FrameLayout.LayoutParams floatingParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
         floatingParams.gravity = Gravity.TOP | Gravity.START;
-        floatingParams.setMargins(dpToPx(12), dpToPx(-8), 0, 0); // 负上边距使其部分重叠
+        floatingParams.setMargins(dpToPx(12), dpToPx(-20), 0, 0); // 从 -8 改为 -20，上移更多
         floatingContainer.setLayoutParams(floatingParams);
 
         inputWrapper.addView(floatingContainer);
