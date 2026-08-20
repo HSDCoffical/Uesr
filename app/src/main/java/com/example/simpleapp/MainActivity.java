@@ -149,7 +149,7 @@ public class MainActivity extends Activity {
         View statusBarView = new View(this);
         statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                statusBarHeight * 2
+                statusBarHeight * 3
         ));
         statusBarView.setBackgroundColor(Color.WHITE);
         mainLayout.addView(statusBarView);
