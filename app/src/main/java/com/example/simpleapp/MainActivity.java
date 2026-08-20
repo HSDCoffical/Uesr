@@ -335,22 +335,21 @@ public class MainActivity extends Activity {
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
 
-        // 新建对话图标 "+"（右移紧贴 "☰"）
+        // 新建对话图标 "+"
         Button btnNewChat = new Button(this);
         btnNewChat.setText("+");
         btnNewChat.setTextSize(24);
         btnNewChat.setTypeface(Typeface.DEFAULT_BOLD);
         btnNewChat.setBackground(null);
         btnNewChat.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        // 左内边距保持 64，右内边距改为 0，让 "+" 紧贴 "☰"
-        btnNewChat.setPadding(64, 0, 0, 0);
+        btnNewChat.setPadding(64, 0, 0, 0); // 右内边距为0，紧贴"☰"
         btnNewChat.setOnClickListener(v -> {
             newConversation();
             closeMenuIfOpen();
         });
         topBar.addView(btnNewChat);
 
-        // 菜单按钮 "☰"（位置不变）
+        // 菜单按钮 "☰"
         Button btnMenu = new Button(this);
         btnMenu.setText("☰");
         btnMenu.setTextSize(24);
@@ -377,21 +376,55 @@ public class MainActivity extends Activity {
         scrollView.addView(chatContainer);
         main.addView(scrollView);
 
-        // 输入框区域
+        // ========== 玻璃工具栏（AI切换 + 语音输入） ==========
+        LinearLayout toolBar = new LinearLayout(this);
+        toolBar.setOrientation(LinearLayout.HORIZONTAL);
+        toolBar.setGravity(Gravity.CENTER_VERTICAL | Gravity.END);
+        toolBar.setPadding(16, 8, 16, 8);
+        toolBar.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+        // 玻璃效果：半透明白色，圆角 20dp
+        GradientDrawable glassBg = new GradientDrawable();
+        glassBg.setCornerRadius(dpToPx(20));
+        glassBg.setColor(Color.parseColor("#CCFFFFFF"));
+        toolBar.setBackground(glassBg);
+
+        // AI切换按钮
+        btnSwitchAI = new Button(this);
+        btnSwitchAI.setText("AI");
+        btnSwitchAI.setTextSize(12);
+        btnSwitchAI.setBackgroundColor(Color.TRANSPARENT);
+        btnSwitchAI.setTextColor(Color.BLACK);
+        btnSwitchAI.setPadding(12, 6, 12, 6);
+        btnSwitchAI.setOnClickListener(v -> showModelSelector());
+        toolBar.addView(btnSwitchAI);
+
+        // 语音输入按钮
+        btnVoice = new Button(this);
+        btnVoice.setText("🎤");
+        btnVoice.setTextSize(16);
+        btnVoice.setBackground(null);
+        btnVoice.setOnClickListener(v -> startVoiceInput());
+        toolBar.addView(btnVoice);
+
+        main.addView(toolBar);
+
+        // ========== 输入框区域（仅保留输入框和发送按钮） ==========
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
         inputLayout.setPadding(8, 4, 8, 4);
 
-        // 输入框R角更圆润：32dp
-        GradientDrawable glass = new GradientDrawable();
-        glass.setCornerRadius(dpToPx(32));
+        GradientDrawable inputBg = new GradientDrawable();
+        inputBg.setCornerRadius(dpToPx(32));
         if (themeHelper.isDarkMode()) {
-            glass.setColor(Color.parseColor("#55FFFFFF"));
+            inputBg.setColor(Color.parseColor("#55FFFFFF"));
         } else {
-            glass.setColor(Color.parseColor("#99FFFFFF"));
+            inputBg.setColor(Color.parseColor("#99FFFFFF"));
         }
-        glass.setStroke(1, themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44AAAAAA"));
-        inputLayout.setBackground(glass);
+        inputBg.setStroke(1, themeHelper.isDarkMode() ? Color.parseColor("#44FFFFFF") : Color.parseColor("#44AAAAAA"));
+        inputLayout.setBackground(inputBg);
 
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
@@ -402,24 +435,6 @@ public class MainActivity extends Activity {
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
         etInput.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         inputLayout.addView(etInput);
-
-        // AI切换按钮
-        btnSwitchAI = new Button(this);
-        btnSwitchAI.setText("AI");
-        btnSwitchAI.setTextSize(12);
-        btnSwitchAI.setBackgroundColor(Color.TRANSPARENT);
-        btnSwitchAI.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnSwitchAI.setPadding(8, 4, 8, 4);
-        btnSwitchAI.setOnClickListener(v -> showModelSelector());
-        inputLayout.addView(btnSwitchAI);
-
-        // 麦克风按钮
-        btnVoice = new Button(this);
-        btnVoice.setText("🎤");
-        btnVoice.setTextSize(16);
-        btnVoice.setBackground(null);
-        btnVoice.setOnClickListener(v -> startVoiceInput());
-        inputLayout.addView(btnVoice);
 
         btnSend = new Button(this);
         btnSend.setText("发送");
@@ -840,6 +855,32 @@ private void deleteConversation(int index) {
             })
             .setNegativeButton("取消", null)
             .show();
+}
+
+// ----- AI切换对话框 -----
+private void showModelSelector() {
+    List<ApiConfig> configs = settingsHelper.getConfigs();
+    if (configs.isEmpty()) {
+        Toast.makeText(this, "请先在设置中添加AI配置", Toast.LENGTH_LONG).show();
+        return;
+    }
+    String[] names = new String[configs.size()];
+    for (int i = 0; i < configs.size(); i++) {
+        names[i] = configs.get(i).getName() + " (" + configs.get(i).getModel() + ")";
+    }
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    builder.setTitle("选择AI模型");
+    builder.setItems(names, (dialog, which) -> {
+        ApiConfig selected = configs.get(which);
+        settingsHelper.setCurrentConfigId(selected.getId());
+        if (tvStatus != null) {
+            tvStatus.setText(selected.getModel());
+        }
+        Toast.makeText(this, "已切换到: " + selected.getName(), Toast.LENGTH_SHORT).show();
+    });
+    builder.setNegativeButton("取消", null);
+    AlertDialog dialog = builder.create();
+    dialog.show();
 }    private void applyBackground() {
         Bitmap bg = themeHelper.getBackground();
         if (bg != null) {
@@ -1203,32 +1244,6 @@ private void deleteConversation(int index) {
         if (isMenuOpen) {
             refreshHistory(searchInput != null ? searchInput.getText().toString() : "");
         }
-    }
-
-    // ----- AI切换对话框 -----
-    private void showModelSelector() {
-        List<ApiConfig> configs = settingsHelper.getConfigs();
-        if (configs.isEmpty()) {
-            Toast.makeText(this, "请先在设置中添加AI配置", Toast.LENGTH_LONG).show();
-            return;
-        }
-        String[] names = new String[configs.size()];
-        for (int i = 0; i < configs.size(); i++) {
-            names[i] = configs.get(i).getName() + " (" + configs.get(i).getModel() + ")";
-        }
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("选择AI模型");
-        builder.setItems(names, (dialog, which) -> {
-            ApiConfig selected = configs.get(which);
-            settingsHelper.setCurrentConfigId(selected.getId());
-            if (tvStatus != null) {
-                tvStatus.setText(selected.getModel());
-            }
-            Toast.makeText(this, "已切换到: " + selected.getName(), Toast.LENGTH_SHORT).show();
-        });
-        builder.setNegativeButton("取消", null);
-        AlertDialog dialog = builder.create();
-        dialog.show();
     }
 
     private void startVoiceInput() {
