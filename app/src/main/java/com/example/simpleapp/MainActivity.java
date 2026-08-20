@@ -295,7 +295,7 @@ public class MainActivity extends Activity {
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
         // 顶部内边距适配白色区域变大，设为 statusBarHeight * 2
-        int topPadding = statusBarHeight * 2;
+        int topPadding = dpToPx(45);
         topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
