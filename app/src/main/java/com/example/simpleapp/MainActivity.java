@@ -431,11 +431,11 @@ public class MainActivity extends Activity {
         // ========== 两个独立的悬浮按钮（缩小一倍 + 上移 + 分开） ==========
         // AI切换按钮
         btnSwitchAI = new Button(this);
-        btnSwitchAI.setText("AI");
-        btnSwitchAI.setTextSize(9); // 从 11 缩小到 9
+        btnSwitchAI.setText("AI切换");
+        btnSwitchAI.setTextSize(11); // 从 11 缩小到 9
         btnSwitchAI.setBackgroundColor(Color.TRANSPARENT);
         btnSwitchAI.setTextColor(Color.BLACK);
-        btnSwitchAI.setPadding(6, 2, 6, 2); // 从 10,4,10,4 缩小到 6,2,6,2
+        btnSwitchAI.setPadding(5, 2, 5, 2); // 从 10,4,10,4 缩小到 6,2,6,2
         GradientDrawable glassBg1 = new GradientDrawable();
         glassBg1.setCornerRadius(dpToPx(8));
         glassBg1.setColor(Color.parseColor("#AAFFFFFF"));
@@ -444,10 +444,10 @@ public class MainActivity extends Activity {
 
         // 语音输入按钮
         btnVoice = new Button(this);
-        btnVoice.setText("🎤");
+        btnVoice.setText("语音输入");
         btnVoice.setTextSize(11); // 从 14 缩小到 11
         btnVoice.setBackgroundColor(Color.TRANSPARENT);
-        btnVoice.setPadding(6, 2, 6, 2); // 从 10,4,10,4 缩小到 6,2,6,2
+        btnVoice.setPadding(5, 2, 5, 2); // 从 10,4,10,4 缩小到 6,2,6,2
         GradientDrawable glassBg2 = new GradientDrawable();
         glassBg2.setCornerRadius(dpToPx(8));
         glassBg2.setColor(Color.parseColor("#AAFFFFFF"));
@@ -475,7 +475,7 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
         floatingParams.gravity = Gravity.TOP | Gravity.START;
-        floatingParams.setMargins(dpToPx(12), dpToPx(-20), 0, 0); // 从 -8 改为 -20，上移更多
+        floatingParams.setMargins(dpToPx(12), dpToPx(-), 0, 0); // 从 -8 改为 -20，上移更多
         floatingContainer.setLayoutParams(floatingParams);
 
         inputWrapper.addView(floatingContainer);
