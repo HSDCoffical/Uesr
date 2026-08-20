@@ -343,7 +343,7 @@ topBar.setPadding(16, topPadding, 16, 16);
         btnNewChat.setTypeface(Typeface.DEFAULT_BOLD);
         btnNewChat.setBackground(null);
         btnNewChat.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnNewChat.setPadding(16, 0, 8, 0);
+        btnNewChat.setPadding(64, 0, 8, 0);
         btnNewChat.setOnClickListener(v -> {
             newConversation();
             closeMenuIfOpen();
