@@ -335,7 +335,7 @@ public class MainActivity extends Activity {
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
 
-        // 新建对话图标 "+"（位置不变）
+        // 新建对话图标 "+"
         Button btnNewChat = new Button(this);
         btnNewChat.setText("+");
         btnNewChat.setTextSize(24);
@@ -376,14 +376,14 @@ public class MainActivity extends Activity {
         scrollView.addView(chatContainer);
         main.addView(scrollView);
 
-        // ========== 输入框区域（使用 FrameLayout 包裹以实现悬浮） ==========
+        // ========== 输入框区域（使用 FrameLayout 包裹，按钮独立悬浮） ==========
         FrameLayout inputWrapper = new FrameLayout(this);
         inputWrapper.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
 
-        // 输入框（背景保持不变）
+        // 输入框（恢复之前大小：16,14,16,14）
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
         inputLayout.setPadding(8, 4, 8, 4);
@@ -401,8 +401,8 @@ public class MainActivity extends Activity {
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        // 恢复原来大小：padding 从 16,14,16,14 改为 16,12,16,12
-        etInput.setPadding(16, 12, 16, 12);
+        // 恢复之前大小：16,14,16,14
+        etInput.setPadding(16, 14, 16, 14);
         etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
@@ -431,11 +431,11 @@ public class MainActivity extends Activity {
         // ========== 两个独立的悬浮按钮（缩小一倍 + 上移 + 分开） ==========
         // AI切换按钮
         btnSwitchAI = new Button(this);
-        btnSwitchAI.setText("AI切换");
-        btnSwitchAI.setTextSize(11); // 从 11 缩小到 9
+        btnSwitchAI.setText("AI");
+        btnSwitchAI.setTextSize(9);
         btnSwitchAI.setBackgroundColor(Color.TRANSPARENT);
         btnSwitchAI.setTextColor(Color.BLACK);
-        btnSwitchAI.setPadding(5, 2, 5, 2); // 从 10,4,10,4 缩小到 6,2,6,2
+        btnSwitchAI.setPadding(6, 2, 6, 2);
         GradientDrawable glassBg1 = new GradientDrawable();
         glassBg1.setCornerRadius(dpToPx(8));
         glassBg1.setColor(Color.parseColor("#AAFFFFFF"));
@@ -444,38 +444,39 @@ public class MainActivity extends Activity {
 
         // 语音输入按钮
         btnVoice = new Button(this);
-        btnVoice.setText("语音输入");
-        btnVoice.setTextSize(11); // 从 14 缩小到 11
+        btnVoice.setText("🎤");
+        btnVoice.setTextSize(11);
         btnVoice.setBackgroundColor(Color.TRANSPARENT);
-        btnVoice.setPadding(5, 2, 5, 2); // 从 10,4,10,4 缩小到 6,2,6,2
+        btnVoice.setPadding(6, 2, 6, 2);
         GradientDrawable glassBg2 = new GradientDrawable();
         glassBg2.setCornerRadius(dpToPx(8));
         glassBg2.setColor(Color.parseColor("#AAFFFFFF"));
         btnVoice.setBackground(glassBg2);
         btnVoice.setOnClickListener(v -> startVoiceInput());
 
-        // 将两个按钮放在一个水平LinearLayout中，并增加间距
+        // 将两个按钮放在容器中，独立于输入框悬浮
         LinearLayout floatingContainer = new LinearLayout(this);
         floatingContainer.setOrientation(LinearLayout.HORIZONTAL);
         floatingContainer.setGravity(Gravity.CENTER_VERTICAL);
         floatingContainer.setPadding(0, 0, 0, 0);
-        // 两个按钮之间增加 6dp 间距
+        floatingContainer.setBackgroundColor(Color.TRANSPARENT);
+
         LinearLayout.LayoutParams switchParams = new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
-        switchParams.setMargins(0, 0, dpToPx(6), 0);
+        switchParams.setMargins(0, 0, dpToPx(6), 0); // 按钮间距
         btnSwitchAI.setLayoutParams(switchParams);
         floatingContainer.addView(btnSwitchAI);
         floatingContainer.addView(btnVoice);
 
-        // 位置：输入框左上角，上移更多
+        // 独立定位：左上角悬浮
         FrameLayout.LayoutParams floatingParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
         floatingParams.gravity = Gravity.TOP | Gravity.START;
-        floatingParams.setMargins(dpToPx(12), dpToPx(-), 0, 0); // 从 -8 改为 -20，上移更多
+        floatingParams.setMargins(dpToPx(12), dpToPx(-20), 0, 0);
         floatingContainer.setLayoutParams(floatingParams);
 
         inputWrapper.addView(floatingContainer);
