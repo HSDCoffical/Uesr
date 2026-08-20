@@ -343,7 +343,7 @@ public class MainActivity extends Activity {
         btnNewChat.setTypeface(Typeface.DEFAULT_BOLD);
         btnNewChat.setBackground(null);
         btnNewChat.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnNewChat.setPadding(8, 0, 8, 0);
+        btnNewChat.setPadding(8, 0, 8, 4);
         btnNewChat.setOnClickListener(v -> {
             newConversation();
             closeMenuIfOpen();
