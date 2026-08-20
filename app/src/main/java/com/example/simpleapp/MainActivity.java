@@ -488,7 +488,7 @@ public class MainActivity extends Activity {
     ImageView searchIcon = new ImageView(this);
     searchIcon.setImageResource(android.R.drawable.ic_menu_search);
     searchIcon.setColorFilter(Color.GRAY);
-    searchIcon.setPadding(8, 12, 8, 8);
+    searchIcon.setPadding(8, 20, 8, 8);
     LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
             dpToPx(24), dpToPx(24)
     );
