@@ -475,7 +475,7 @@ public class MainActivity extends Activity {
     // ----- 顶部搜索框 -----
     LinearLayout searchContainer = new LinearLayout(this);
     searchContainer.setOrientation(LinearLayout.HORIZONTAL);
-    searchContainer.setPadding(16, 16, 16, 16);
+    searchContainer.setPadding(13, 8, 13, 0);
     searchContainer.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
