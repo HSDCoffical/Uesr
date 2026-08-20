@@ -382,6 +382,9 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
+        // 重要：允许子视图超出边界，避免按钮被裁剪
+        inputWrapper.setClipChildren(false);
+        inputWrapper.setClipToPadding(false);
 
         // 输入框（恢复之前大小：16,14,16,14）
         LinearLayout inputLayout = new LinearLayout(this);
@@ -401,7 +404,6 @@ public class MainActivity extends Activity {
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        // 恢复之前大小：16,14,16,14
         etInput.setPadding(16, 14, 16, 14);
         etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
@@ -465,18 +467,18 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
-        switchParams.setMargins(0, 0, dpToPx(6), 0); // 按钮间距
+        switchParams.setMargins(0, 0, dpToPx(6), 0);
         btnSwitchAI.setLayoutParams(switchParams);
         floatingContainer.addView(btnSwitchAI);
         floatingContainer.addView(btnVoice);
 
-        // 独立定位：左上角悬浮
+        // 独立定位：左上角悬浮，上边距调小避免被裁剪
         FrameLayout.LayoutParams floatingParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
         );
         floatingParams.gravity = Gravity.TOP | Gravity.START;
-        floatingParams.setMargins(dpToPx(12), dpToPx(-20), 0, 0);
+        floatingParams.setMargins(dpToPx(12), dpToPx(-24), 0, 0);
         floatingContainer.setLayoutParams(floatingParams);
 
         inputWrapper.addView(floatingContainer);
