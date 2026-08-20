@@ -470,12 +470,12 @@ topBar.setPadding(16, topPadding, 16, 16);
     panelParams.gravity = Gravity.END;
     menuPanel.setLayoutParams(panelParams);
     menuPanel.setBackgroundColor(Color.WHITE);
-    menuPanel.setPadding(0, 32, 0, 0);
+    menuPanel.setPadding(0, 90, 0, 0);
 
     // ----- 顶部搜索框 -----
     LinearLayout searchContainer = new LinearLayout(this);
     searchContainer.setOrientation(LinearLayout.HORIZONTAL);
-    searchContainer.setPadding(13, 8, 13, 4);
+    searchContainer.setPadding(15, 8, 15, 6);
     searchContainer.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
@@ -488,7 +488,7 @@ topBar.setPadding(16, topPadding, 16, 16);
     ImageView searchIcon = new ImageView(this);
     searchIcon.setImageResource(android.R.drawable.ic_menu_search);
     searchIcon.setColorFilter(Color.GRAY);
-    searchIcon.setPadding(8, 20, 8, 8);
+    searchIcon.setPadding(8, 8, 8, 8);
     LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
             dpToPx(24), dpToPx(24)
     );
