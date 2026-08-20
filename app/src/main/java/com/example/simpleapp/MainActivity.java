@@ -65,7 +65,7 @@ public class MainActivity extends Activity {
     public static class Conversation {
         public String title;
         public List<ChatMessage> messages;
-        public long lastUpdateTime; // 最后一次更新时间
+        public long lastUpdateTime;
         public Conversation(String title, List<ChatMessage> messages) {
             this.title = title;
             this.messages = messages;
@@ -103,7 +103,7 @@ public class MainActivity extends Activity {
     private FrameLayout menuContainer;
     private LinearLayout menuPanel;
     private LinearLayout historyContainer;
-    private EditText searchInput; // 搜索框
+    private EditText searchInput;
     private boolean isMenuOpen = false;
 
     private int statusBarHeight = 0;
@@ -160,7 +160,7 @@ public class MainActivity extends Activity {
         }
         mainLayout.addView(bgImage);
 
-        // 顶部白色背景高度改为 statusBarHeight * 3
+        // 顶部白色背景高度改为 statusBarHeight * 2
         View statusBarView = new View(this);
         statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -203,7 +203,6 @@ public class MainActivity extends Activity {
                 }
 
                 messages.add(new ChatMessage("user", input));
-                // 更新对话列表中的时间
                 if (currentIndex >= 0 && currentIndex < conversationHistory.size()) {
                     conversationHistory.get(currentIndex).lastUpdateTime = System.currentTimeMillis();
                 }
@@ -316,8 +315,8 @@ public class MainActivity extends Activity {
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-         int topPadding = dpToPx(33);
-topBar.setPadding(16, topPadding, 16, 16);
+        int topPadding = dpToPx(33);
+        topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
@@ -336,21 +335,22 @@ topBar.setPadding(16, topPadding, 16, 16);
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
 
-        // 新建对话图标（纯黑线条 "+"）
+        // 新建对话图标 "+"（右移紧贴 "☰"）
         Button btnNewChat = new Button(this);
         btnNewChat.setText("+");
         btnNewChat.setTextSize(24);
         btnNewChat.setTypeface(Typeface.DEFAULT_BOLD);
         btnNewChat.setBackground(null);
         btnNewChat.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnNewChat.setPadding(64, 0, 8, 0);
+        // 左内边距保持 64，右内边距改为 0，让 "+" 紧贴 "☰"
+        btnNewChat.setPadding(64, 0, 0, 0);
         btnNewChat.setOnClickListener(v -> {
             newConversation();
             closeMenuIfOpen();
         });
         topBar.addView(btnNewChat);
 
-        // 菜单按钮 "☰"
+        // 菜单按钮 "☰"（位置不变）
         Button btnMenu = new Button(this);
         btnMenu.setText("☰");
         btnMenu.setTextSize(24);
@@ -396,7 +396,7 @@ topBar.setPadding(16, topPadding, 16, 16);
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(16, 14, 16, 14); // 调整内边距
+        etInput.setPadding(16, 14, 16, 14);
         etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
@@ -567,7 +567,6 @@ topBar.setPadding(16, topPadding, 16, 16);
     refreshHistory("");
 }
 
-// 按时间分组并刷新历史列表
 private void refreshHistory(String filter) {
     if (historyContainer == null) return;
     historyContainer.removeAllViews();
@@ -591,14 +590,12 @@ private void refreshHistory(String filter) {
         return;
     }
 
-    // 按时间分组：今天、昨天、7天内、30天内、更早
     long now = System.currentTimeMillis();
     long todayStart = getDayStart(now);
     long yesterdayStart = todayStart - 24 * 60 * 60 * 1000;
     long weekStart = todayStart - 7 * 24 * 60 * 60 * 1000;
     long monthStart = todayStart - 30 * 24 * 60 * 60 * 1000;
 
-    // 分组
     List<Conversation> todayList = new ArrayList<>();
     List<Conversation> yesterdayList = new ArrayList<>();
     List<Conversation> weekList = new ArrayList<>();
@@ -843,34 +840,6 @@ private void deleteConversation(int index) {
             })
             .setNegativeButton("取消", null)
             .show();
-}
-
-// ----- AI切换对话框 -----
-private void showModelSelector() {
-    List<ApiConfig> configs = settingsHelper.getConfigs();
-    if (configs.isEmpty()) {
-        Toast.makeText(this, "请先在设置中添加AI配置", Toast.LENGTH_LONG).show();
-        return;
-    }
-    String[] names = new String[configs.size()];
-    for (int i = 0; i < configs.size(); i++) {
-        names[i] = configs.get(i).getName() + " (" + configs.get(i).getModel() + ")";
-    }
-    AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    builder.setTitle("选择AI模型");
-    builder.setItems(names, (dialog, which) -> {
-        ApiConfig selected = configs.get(which);
-        settingsHelper.setCurrentConfigId(selected.getId());
-        // 更新顶部模型名称
-        if (tvStatus != null) {
-            tvStatus.setText(selected.getModel());
-        }
-        Toast.makeText(this, "已切换到: " + selected.getName(), Toast.LENGTH_SHORT).show();
-    });
-    builder.setNegativeButton("取消", null);
-    AlertDialog dialog = builder.create();
-    // 设置圆角样式（Android原生默认带圆角）
-    dialog.show();
 }    private void applyBackground() {
         Bitmap bg = themeHelper.getBackground();
         if (bg != null) {
@@ -1148,7 +1117,6 @@ private void showModelSelector() {
 
     private void saveAllConversations() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        // 更新当前对话的时间
         if (!messages.isEmpty() && currentIndex >= 0 && currentIndex < conversationHistory.size()) {
             conversationHistory.get(currentIndex).lastUpdateTime = System.currentTimeMillis();
         }
@@ -1179,7 +1147,6 @@ private void showModelSelector() {
             List<Conversation> loaded = gson.fromJson(json, type);
             if (loaded != null) {
                 conversationHistory = loaded;
-                // 确保每个对话有 lastUpdateTime（兼容旧数据）
                 for (Conversation conv : conversationHistory) {
                     if (conv.lastUpdateTime == 0 && conv.messages != null && !conv.messages.isEmpty()) {
                         conv.lastUpdateTime = conv.messages.get(conv.messages.size() - 1).getTimestamp();
@@ -1233,10 +1200,35 @@ private void showModelSelector() {
         saveAllConversations();
         renderMessages();
         Toast.makeText(this, "已创建新对话", Toast.LENGTH_SHORT).show();
-        // 如果菜单打开，刷新历史
         if (isMenuOpen) {
             refreshHistory(searchInput != null ? searchInput.getText().toString() : "");
         }
+    }
+
+    // ----- AI切换对话框 -----
+    private void showModelSelector() {
+        List<ApiConfig> configs = settingsHelper.getConfigs();
+        if (configs.isEmpty()) {
+            Toast.makeText(this, "请先在设置中添加AI配置", Toast.LENGTH_LONG).show();
+            return;
+        }
+        String[] names = new String[configs.size()];
+        for (int i = 0; i < configs.size(); i++) {
+            names[i] = configs.get(i).getName() + " (" + configs.get(i).getModel() + ")";
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("选择AI模型");
+        builder.setItems(names, (dialog, which) -> {
+            ApiConfig selected = configs.get(which);
+            settingsHelper.setCurrentConfigId(selected.getId());
+            if (tvStatus != null) {
+                tvStatus.setText(selected.getModel());
+            }
+            Toast.makeText(this, "已切换到: " + selected.getName(), Toast.LENGTH_SHORT).show();
+        });
+        builder.setNegativeButton("取消", null);
+        AlertDialog dialog = builder.create();
+        dialog.show();
     }
 
     private void startVoiceInput() {
