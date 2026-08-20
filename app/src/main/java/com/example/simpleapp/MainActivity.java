@@ -20,6 +20,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -46,8 +47,11 @@ import com.google.gson.reflect.TypeToken;
 import java.io.File;
 import java.io.FileWriter;
 import java.lang.reflect.Type;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends Activity {
     private static final String TAG = "MainActivity";
@@ -61,9 +65,15 @@ public class MainActivity extends Activity {
     public static class Conversation {
         public String title;
         public List<ChatMessage> messages;
+        public long lastUpdateTime; // 最后一次更新时间
         public Conversation(String title, List<ChatMessage> messages) {
             this.title = title;
             this.messages = messages;
+            if (messages != null && !messages.isEmpty()) {
+                this.lastUpdateTime = messages.get(messages.size() - 1).getTimestamp();
+            } else {
+                this.lastUpdateTime = System.currentTimeMillis();
+            }
         }
     }
 
@@ -89,15 +99,19 @@ public class MainActivity extends Activity {
     private ImageView bgImage;
     private int bgAlpha = 100;
 
+    // 菜单相关
     private FrameLayout menuContainer;
     private LinearLayout menuPanel;
     private LinearLayout historyContainer;
+    private EditText searchInput; // 搜索框
     private boolean isMenuOpen = false;
 
     private int statusBarHeight = 0;
 
     // 语音输入按钮
     private Button btnVoice;
+    // AI切换按钮
+    private Button btnSwitchAI;
 
     private int getStatusBarHeight() {
         int result = 0;
@@ -150,7 +164,7 @@ public class MainActivity extends Activity {
         View statusBarView = new View(this);
         statusBarView.setLayoutParams(new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
-                statusBarHeight * 2
+                statusBarHeight * 3
         ));
         statusBarView.setBackgroundColor(Color.WHITE);
         mainLayout.addView(statusBarView);
@@ -189,6 +203,10 @@ public class MainActivity extends Activity {
                 }
 
                 messages.add(new ChatMessage("user", input));
+                // 更新对话列表中的时间
+                if (currentIndex >= 0 && currentIndex < conversationHistory.size()) {
+                    conversationHistory.get(currentIndex).lastUpdateTime = System.currentTimeMillis();
+                }
                 saveAllConversations();
                 renderMessages();
 
@@ -235,6 +253,9 @@ public class MainActivity extends Activity {
                             setLoading(false);
                             if (!messages.isEmpty()) {
                                 messages.set(aiMsgIndex, new ChatMessage("ai", response));
+                                if (currentIndex >= 0 && currentIndex < conversationHistory.size()) {
+                                    conversationHistory.get(currentIndex).lastUpdateTime = System.currentTimeMillis();
+                                }
                                 saveAllConversations();
                                 renderMessages();
                                 scrollView.post(() -> scrollView.fullScroll(View.FOCUS_DOWN));
@@ -291,11 +312,11 @@ public class MainActivity extends Activity {
         main.setOrientation(LinearLayout.VERTICAL);
         main.setPadding(16, 0, 16, 22);
 
+        // 顶部栏：模型名称 + 新建对话图标 + 菜单按钮
         LinearLayout topBar = new LinearLayout(this);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
-        // 顶部内边距适配白色区域变大，设为 statusBarHeight * 2
-        int topPadding = dpToPx(45);
+        int topPadding = statusBarHeight * 2;
         topBar.setPadding(16, topPadding, 16, 16);
         topBar.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -315,13 +336,28 @@ public class MainActivity extends Activity {
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
 
+        // 新建对话图标（纯黑线条 "+"）
+        Button btnNewChat = new Button(this);
+        btnNewChat.setText("+");
+        btnNewChat.setTextSize(24);
+        btnNewChat.setTypeface(Typeface.DEFAULT_BOLD);
+        btnNewChat.setBackground(null);
+        btnNewChat.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+        btnNewChat.setPadding(8, 0, 8, 0);
+        btnNewChat.setOnClickListener(v -> {
+            newConversation();
+            closeMenuIfOpen();
+        });
+        topBar.addView(btnNewChat);
+
+        // 菜单按钮 "☰"
         Button btnMenu = new Button(this);
         btnMenu.setText("☰");
         btnMenu.setTextSize(24);
         btnMenu.setTypeface(Typeface.DEFAULT_BOLD);
         btnMenu.setBackground(null);
         btnMenu.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnMenu.setPadding(150, 0, 8, 0);
+        btnMenu.setPadding(8, 0, 8, 0);
         btnMenu.setOnClickListener(v -> toggleMenu());
         topBar.addView(btnMenu);
 
@@ -341,12 +377,14 @@ public class MainActivity extends Activity {
         scrollView.addView(chatContainer);
         main.addView(scrollView);
 
+        // 输入框区域
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
-        inputLayout.setPadding(8, 2, 8, 2);
+        inputLayout.setPadding(8, 4, 8, 4);
 
+        // 输入框R角更圆润：32dp
         GradientDrawable glass = new GradientDrawable();
-        glass.setCornerRadius(24);
+        glass.setCornerRadius(dpToPx(32));
         if (themeHelper.isDarkMode()) {
             glass.setColor(Color.parseColor("#55FFFFFF"));
         } else {
@@ -358,12 +396,22 @@ public class MainActivity extends Activity {
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(16, 40, 16, 40);
-        etInput.setTextSize(12);
+        etInput.setPadding(16, 14, 16, 14); // 调整内边距
+        etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
         etInput.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         inputLayout.addView(etInput);
+
+        // AI切换按钮
+        btnSwitchAI = new Button(this);
+        btnSwitchAI.setText("AI");
+        btnSwitchAI.setTextSize(12);
+        btnSwitchAI.setBackgroundColor(Color.TRANSPARENT);
+        btnSwitchAI.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
+        btnSwitchAI.setPadding(8, 4, 8, 4);
+        btnSwitchAI.setOnClickListener(v -> showModelSelector());
+        inputLayout.addView(btnSwitchAI);
 
         // 麦克风按钮
         btnVoice = new Button(this);
@@ -414,7 +462,7 @@ public class MainActivity extends Activity {
     menuPanel = new LinearLayout(this);
     menuPanel.setOrientation(LinearLayout.VERTICAL);
     menuPanel.setGravity(Gravity.TOP | Gravity.END);
-    int panelWidth = (int) (getResources().getDisplayMetrics().widthPixels * 0.6);
+    int panelWidth = (int) (getResources().getDisplayMetrics().widthPixels * 0.7);
     FrameLayout.LayoutParams panelParams = new FrameLayout.LayoutParams(
             panelWidth,
             ViewGroup.LayoutParams.MATCH_PARENT
@@ -422,85 +470,58 @@ public class MainActivity extends Activity {
     panelParams.gravity = Gravity.END;
     menuPanel.setLayoutParams(panelParams);
     menuPanel.setBackgroundColor(Color.WHITE);
-    menuPanel.setPadding(20, 130, 20, 20);
+    menuPanel.setPadding(0, 0, 0, 0);
 
-    LinearLayout itemSettings = createMenuItem("设置");
-    itemSettings.setOnClickListener(v -> {
-        closeMenu();
-        Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-        startActivity(intent);
-    });
-    menuPanel.addView(itemSettings);
-
-    View divider1 = new View(this);
-    divider1.setLayoutParams(new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            dpToPx(1)
-    ));
-    divider1.setBackgroundColor(Color.parseColor("#44000000"));
-    menuPanel.addView(divider1);
-
-    LinearLayout itemClear = createMenuItem("清空");
-    itemClear.setOnClickListener(v -> {
-        closeMenu();
-        messages.clear();
-        saveAllConversations();
-        renderMessages();
-        Toast.makeText(this, "对话已清空", Toast.LENGTH_SHORT).show();
-    });
-    menuPanel.addView(itemClear);
-
-    View divider2 = new View(this);
-    divider2.setLayoutParams(new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            dpToPx(1)
-    ));
-    divider2.setBackgroundColor(Color.parseColor("#44000000"));
-    menuPanel.addView(divider2);
-
-    LinearLayout itemExport = createMenuItem("导出对话");
-    itemExport.setOnClickListener(v -> {
-        closeMenu();
-        exportChat();
-    });
-    menuPanel.addView(itemExport);
-
-    View divider3 = new View(this);
-    divider3.setLayoutParams(new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            dpToPx(1)
-    ));
-    divider3.setBackgroundColor(Color.parseColor("#44000000"));
-    menuPanel.addView(divider3);
-
-    LinearLayout itemNewChat = createMenuItem("新建对话");
-    itemNewChat.setOnClickListener(v -> {
-        closeMenu();
-        newConversation();
-    });
-    menuPanel.addView(itemNewChat);
-
-    View divider4 = new View(this);
-    divider4.setLayoutParams(new LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            dpToPx(1)
-    ));
-    divider4.setBackgroundColor(Color.parseColor("#44000000"));
-    menuPanel.addView(divider4);
-
-    LinearLayout headerRow = new LinearLayout(this);
-    headerRow.setOrientation(LinearLayout.HORIZONTAL);
-    headerRow.setPadding(16, 16, 16, 8);
-    headerRow.setLayoutParams(new LinearLayout.LayoutParams(
+    // ----- 顶部搜索框 -----
+    LinearLayout searchContainer = new LinearLayout(this);
+    searchContainer.setOrientation(LinearLayout.HORIZONTAL);
+    searchContainer.setPadding(16, 16, 16, 16);
+    searchContainer.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
     ));
-    TextView headerLabel = new TextView(this);
-    headerLabel.setText("对话历史");
-    headerLabel.setTextSize(14);
-    headerLabel.setTextColor(Color.GRAY);
-    headerRow.addView(headerLabel);
-    menuPanel.addView(headerRow);
+    GradientDrawable searchBg = new GradientDrawable();
+    searchBg.setCornerRadius(dpToPx(20));
+    searchBg.setColor(Color.parseColor("#F0F0F0"));
+    searchContainer.setBackground(searchBg);
+
+    ImageView searchIcon = new ImageView(this);
+    searchIcon.setImageResource(android.R.drawable.ic_menu_search);
+    searchIcon.setColorFilter(Color.GRAY);
+    searchIcon.setPadding(8, 8, 8, 8);
+    LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
+            dpToPx(24), dpToPx(24)
+    );
+    iconParams.gravity = Gravity.CENTER_VERTICAL;
+    searchIcon.setLayoutParams(iconParams);
+    searchContainer.addView(searchIcon);
+
+    searchInput = new EditText(this);
+    searchInput.setHint("搜索对话");
+    searchInput.setBackground(null);
+    searchInput.setTextColor(Color.BLACK);
+    searchInput.setHintTextColor(Color.GRAY);
+    searchInput.setLayoutParams(new LinearLayout.LayoutParams(
+            0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f
+    ));
+    searchInput.addTextChangedListener(new android.text.TextWatcher() {
+        @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+        @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+            refreshHistory(s.toString());
+        }
+        @Override public void afterTextChanged(android.text.Editable s) {}
+    });
+    searchContainer.addView(searchInput);
+
+    menuPanel.addView(searchContainer);
+
+    // ----- 对话历史列表（滚动）-----
+    ScrollView historyScroll = new ScrollView(this);
+    historyScroll.setLayoutParams(new LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            0,
+            1.0f
+    ));
 
     historyContainer = new LinearLayout(this);
     historyContainer.setOrientation(LinearLayout.VERTICAL);
@@ -508,33 +529,158 @@ public class MainActivity extends Activity {
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
     ));
-    menuPanel.addView(historyContainer);
+    historyScroll.addView(historyContainer);
+    menuPanel.addView(historyScroll);
 
-    View closeArea = new View(this);
-    closeArea.setLayoutParams(new LinearLayout.LayoutParams(
+    // ----- 底部“三个点”按钮（跳转设置）-----
+    LinearLayout bottomBar = new LinearLayout(this);
+    bottomBar.setOrientation(LinearLayout.HORIZONTAL);
+    bottomBar.setGravity(Gravity.CENTER_VERTICAL);
+    bottomBar.setPadding(16, 16, 16, 16);
+    bottomBar.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
-            0,
-            1.0f
+            ViewGroup.LayoutParams.WRAP_CONTENT
     ));
-    closeArea.setOnClickListener(v -> closeMenu());
-    menuPanel.addView(closeArea);
+    // 左侧填充空白
+    View spacer = new View(this);
+    spacer.setLayoutParams(new LinearLayout.LayoutParams(0, 1, 1.0f));
+    bottomBar.addView(spacer);
+
+    Button btnMore = new Button(this);
+    btnMore.setText("⋮");
+    btnMore.setTextSize(24);
+    btnMore.setBackground(null);
+    btnMore.setTextColor(Color.BLACK);
+    btnMore.setOnClickListener(v -> {
+        closeMenu();
+        Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
+        startActivity(intent);
+    });
+    bottomBar.addView(btnMore);
+
+    menuPanel.addView(bottomBar);
 
     menuContainer.addView(menuPanel);
     parent.addView(menuContainer);
+
+    // 初始刷新历史
+    refreshHistory("");
+}
+
+// 按时间分组并刷新历史列表
+private void refreshHistory(String filter) {
+    if (historyContainer == null) return;
+    historyContainer.removeAllViews();
+
+    List<Conversation> filtered = new ArrayList<>();
+    for (Conversation conv : conversationHistory) {
+        String title = conv.title != null ? conv.title : "无标题";
+        if (TextUtils.isEmpty(filter) || title.contains(filter)) {
+            filtered.add(conv);
+        }
+    }
+
+    if (filtered.isEmpty()) {
+        TextView empty = new TextView(this);
+        empty.setText("暂无对话");
+        empty.setTextSize(16);
+        empty.setTextColor(Color.GRAY);
+        empty.setGravity(Gravity.CENTER);
+        empty.setPadding(0, 40, 0, 40);
+        historyContainer.addView(empty);
+        return;
+    }
+
+    // 按时间分组：今天、昨天、7天内、30天内、更早
+    long now = System.currentTimeMillis();
+    long todayStart = getDayStart(now);
+    long yesterdayStart = todayStart - 24 * 60 * 60 * 1000;
+    long weekStart = todayStart - 7 * 24 * 60 * 60 * 1000;
+    long monthStart = todayStart - 30 * 24 * 60 * 60 * 1000;
+
+    // 分组
+    List<Conversation> todayList = new ArrayList<>();
+    List<Conversation> yesterdayList = new ArrayList<>();
+    List<Conversation> weekList = new ArrayList<>();
+    List<Conversation> monthList = new ArrayList<>();
+    List<Conversation> olderList = new ArrayList<>();
+
+    for (Conversation conv : filtered) {
+        long t = conv.lastUpdateTime;
+        if (t >= todayStart) {
+            todayList.add(conv);
+        } else if (t >= yesterdayStart) {
+            yesterdayList.add(conv);
+        } else if (t >= weekStart) {
+            weekList.add(conv);
+        } else if (t >= monthStart) {
+            monthList.add(conv);
+        } else {
+            olderList.add(conv);
+        }
+    }
+
+    addGroup("今天", todayList);
+    addGroup("昨天", yesterdayList);
+    addGroup("7天内", weekList);
+    addGroup("30天内", monthList);
+    if (!olderList.isEmpty()) {
+        addGroup("更早", olderList);
+    }
+}
+
+private void addGroup(String label, List<Conversation> list) {
+    if (list.isEmpty()) return;
+    TextView header = new TextView(this);
+    header.setText(label);
+    header.setTextSize(14);
+    header.setTextColor(Color.GRAY);
+    header.setPadding(16, 16, 16, 8);
+    historyContainer.addView(header);
+
+    for (int i = 0; i < list.size(); i++) {
+        final int index = conversationHistory.indexOf(list.get(i));
+        if (index == -1) continue;
+        Conversation conv = list.get(i);
+        String title = conv.title != null && !conv.title.isEmpty() ? conv.title : "无标题";
+        LinearLayout item = createMenuItem(title);
+        if (currentIndex == index) {
+            item.setBackgroundColor(Color.parseColor("#33007AFF"));
+        }
+        final int finalIndex = index;
+        item.setOnClickListener(v -> {
+            closeMenu();
+            loadConversation(finalIndex);
+        });
+        item.setOnLongClickListener(v -> {
+            showHistoryItemMenu(finalIndex);
+            return true;
+        });
+        historyContainer.addView(item);
+    }
+}
+
+private long getDayStart(long time) {
+    java.util.Calendar cal = java.util.Calendar.getInstance();
+    cal.setTimeInMillis(time);
+    cal.set(java.util.Calendar.HOUR_OF_DAY, 0);
+    cal.set(java.util.Calendar.MINUTE, 0);
+    cal.set(java.util.Calendar.SECOND, 0);
+    cal.set(java.util.Calendar.MILLISECOND, 0);
+    return cal.getTimeInMillis();
 }
 
 private LinearLayout createMenuItem(String text) {
     LinearLayout item = new LinearLayout(this);
     item.setOrientation(LinearLayout.HORIZONTAL);
     item.setGravity(Gravity.CENTER_VERTICAL);
-    // 文字与分割线间距调大：上下内边距从24改为30
-    item.setPadding(16, 30, 16, 30);
+    item.setPadding(16, 20, 16, 20);
     item.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
     ));
     GradientDrawable bg = new GradientDrawable();
-    bg.setCornerRadius(dpToPx(8));
+    bg.setCornerRadius(dpToPx(4));
     bg.setColor(Color.TRANSPARENT);
     item.setBackground(bg);
 
@@ -565,7 +711,7 @@ private void toggleMenu() {
 
 private void openMenu() {
     if (menuContainer == null) return;
-    refreshHistory();
+    refreshHistory(searchInput != null ? searchInput.getText().toString() : "");
     menuContainer.setVisibility(View.VISIBLE);
     AlphaAnimation fadeIn = new AlphaAnimation(0.0f, 1.0f);
     fadeIn.setDuration(300);
@@ -611,38 +757,8 @@ private void closeMenu() {
     isMenuOpen = false;
 }
 
-private void refreshHistory() {
-    if (historyContainer == null) return;
-    historyContainer.removeAllViews();
-
-    if (conversationHistory.isEmpty()) {
-        TextView empty = new TextView(this);
-        empty.setText("暂无对话");
-        empty.setTextSize(14);
-        empty.setTextColor(Color.GRAY);
-        empty.setPadding(16, 12, 16, 12);
-        historyContainer.addView(empty);
-        return;
-    }
-
-    for (int i = 0; i < conversationHistory.size(); i++) {
-        final int index = i;
-        Conversation conv = conversationHistory.get(i);
-        String title = conv.title != null && !conv.title.isEmpty() ? conv.title : "无标题";
-        LinearLayout item = createMenuItem(title);
-        if (currentIndex == i) {
-            item.setBackgroundColor(Color.parseColor("#33007AFF"));
-        }
-        item.setOnClickListener(v -> {
-            closeMenu();
-            loadConversation(index);
-        });
-        item.setOnLongClickListener(v -> {
-            showHistoryItemMenu(index);
-            return true;
-        });
-        historyContainer.addView(item);
-    }
+private void closeMenuIfOpen() {
+    if (isMenuOpen) closeMenu();
 }
 
 private void showHistoryItemMenu(final int index) {
@@ -673,7 +789,7 @@ private void exportSingleConversation(int index) {
 
     StringBuilder sb = new StringBuilder();
     sb.append("AI Chat 对话导出\n");
-    sb.append("导出时间: ").append(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date())).append("\n");
+    sb.append("导出时间: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date())).append("\n");
     sb.append("标题: ").append(conv.title != null ? conv.title : "无标题").append("\n\n");
     sb.append("====================================\n\n");
 
@@ -694,7 +810,7 @@ private void exportSingleConversation(int index) {
             dir.mkdirs();
         }
         String fileName = "AI_Chat_" + conv.title.replaceAll("[^a-zA-Z0-9]", "_") + "_" +
-                new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt";
+                new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".txt";
         File file = new File(dir, fileName);
         FileWriter writer = new FileWriter(file);
         writer.write(content);
@@ -722,11 +838,39 @@ private void deleteConversation(int index) {
                     currentIndex--;
                 }
                 saveAllConversations();
-                refreshHistory();
+                refreshHistory(searchInput != null ? searchInput.getText().toString() : "");
                 Toast.makeText(this, "已删除", Toast.LENGTH_SHORT).show();
             })
             .setNegativeButton("取消", null)
             .show();
+}
+
+// ----- AI切换对话框 -----
+private void showModelSelector() {
+    List<ApiConfig> configs = settingsHelper.getConfigs();
+    if (configs.isEmpty()) {
+        Toast.makeText(this, "请先在设置中添加AI配置", Toast.LENGTH_LONG).show();
+        return;
+    }
+    String[] names = new String[configs.size()];
+    for (int i = 0; i < configs.size(); i++) {
+        names[i] = configs.get(i).getName() + " (" + configs.get(i).getModel() + ")";
+    }
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    builder.setTitle("选择AI模型");
+    builder.setItems(names, (dialog, which) -> {
+        ApiConfig selected = configs.get(which);
+        settingsHelper.setCurrentConfigId(selected.getId());
+        // 更新顶部模型名称
+        if (tvStatus != null) {
+            tvStatus.setText(selected.getModel());
+        }
+        Toast.makeText(this, "已切换到: " + selected.getName(), Toast.LENGTH_SHORT).show();
+    });
+    builder.setNegativeButton("取消", null);
+    AlertDialog dialog = builder.create();
+    // 设置圆角样式（Android原生默认带圆角）
+    dialog.show();
 }    private void applyBackground() {
         Bitmap bg = themeHelper.getBackground();
         if (bg != null) {
@@ -761,8 +905,8 @@ private void deleteConversation(int index) {
         if (timestamp == 0) {
             return "刚刚";
         }
-        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault());
-        return sdf.format(new java.util.Date(timestamp));
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        return sdf.format(new Date(timestamp));
     }
 
     private void renderMessages() {
@@ -1004,6 +1148,10 @@ private void deleteConversation(int index) {
 
     private void saveAllConversations() {
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        // 更新当前对话的时间
+        if (!messages.isEmpty() && currentIndex >= 0 && currentIndex < conversationHistory.size()) {
+            conversationHistory.get(currentIndex).lastUpdateTime = System.currentTimeMillis();
+        }
         if (!messages.isEmpty()) {
             if (currentIndex == -1) {
                 String title = generateTitle(messages);
@@ -1014,6 +1162,7 @@ private void deleteConversation(int index) {
                 conversationHistory.get(currentIndex).messages = new ArrayList<>(messages);
                 String title = generateTitle(messages);
                 conversationHistory.get(currentIndex).title = title;
+                conversationHistory.get(currentIndex).lastUpdateTime = System.currentTimeMillis();
             }
         }
         String json = gson.toJson(conversationHistory);
@@ -1030,6 +1179,12 @@ private void deleteConversation(int index) {
             List<Conversation> loaded = gson.fromJson(json, type);
             if (loaded != null) {
                 conversationHistory = loaded;
+                // 确保每个对话有 lastUpdateTime（兼容旧数据）
+                for (Conversation conv : conversationHistory) {
+                    if (conv.lastUpdateTime == 0 && conv.messages != null && !conv.messages.isEmpty()) {
+                        conv.lastUpdateTime = conv.messages.get(conv.messages.size() - 1).getTimestamp();
+                    }
+                }
             }
         }
     }
@@ -1069,6 +1224,7 @@ private void deleteConversation(int index) {
                 conversationHistory.get(currentIndex).messages = new ArrayList<>(messages);
                 String title = generateTitle(messages);
                 conversationHistory.get(currentIndex).title = title;
+                conversationHistory.get(currentIndex).lastUpdateTime = System.currentTimeMillis();
             }
             saveAllConversations();
         }
@@ -1077,6 +1233,10 @@ private void deleteConversation(int index) {
         saveAllConversations();
         renderMessages();
         Toast.makeText(this, "已创建新对话", Toast.LENGTH_SHORT).show();
+        // 如果菜单打开，刷新历史
+        if (isMenuOpen) {
+            refreshHistory(searchInput != null ? searchInput.getText().toString() : "");
+        }
     }
 
     private void startVoiceInput() {
@@ -1094,7 +1254,7 @@ private void deleteConversation(int index) {
         }
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
-        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, java.util.Locale.getDefault());
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
         intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "请说话...");
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
         try {
@@ -1120,7 +1280,7 @@ private void deleteConversation(int index) {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_VOICE && resultCode == RESULT_OK && data != null) {
-            java.util.ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+            ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
             if (results != null && !results.isEmpty()) {
                 String spokenText = results.get(0);
                 etInput.setText(spokenText);
@@ -1160,7 +1320,7 @@ private void deleteConversation(int index) {
 
         StringBuilder sb = new StringBuilder();
         sb.append("AI Chat 对话导出\n");
-        sb.append("导出时间: ").append(new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault()).format(new java.util.Date())).append("\n\n");
+        sb.append("导出时间: ").append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date())).append("\n\n");
         sb.append("====================================\n\n");
 
         for (ChatMessage msg : messages) {
@@ -1178,7 +1338,7 @@ private void deleteConversation(int index) {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("text/plain");
-        intent.putExtra(Intent.EXTRA_TITLE, "AI_Chat_" + new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault()).format(new java.util.Date()) + ".txt");
+        intent.putExtra(Intent.EXTRA_TITLE, "AI_Chat_" + new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date()) + ".txt");
         startActivityForResult(intent, REQUEST_CODE_SAVE_FILE);
     }
 
