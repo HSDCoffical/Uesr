@@ -432,7 +432,7 @@ toolBar.setLayoutParams(toolBarParams);
         // ========== 输入框区域（仅输入框 + 发送按钮） ==========
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
-        inputLayout.setPadding(8, 4, 10, 4);
+        inputLayout.setPadding(8, 4, 14, 4);
 
         GradientDrawable inputBg = new GradientDrawable();
         inputBg.setCornerRadius(dpToPx(32));
