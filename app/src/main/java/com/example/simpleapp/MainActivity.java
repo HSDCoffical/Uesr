@@ -342,7 +342,7 @@ public class MainActivity extends Activity {
         btnNewChat.setTypeface(Typeface.DEFAULT_BOLD);
         btnNewChat.setBackground(null);
         btnNewChat.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnNewChat.setPadding(96, 0, 8, 0);  // 左内边距 80 → 96
+        btnNewChat.setPadding(96, 0, 8, 0);
         btnNewChat.setOnClickListener(v -> {
             newConversation();
             closeMenuIfOpen();
@@ -356,7 +356,7 @@ public class MainActivity extends Activity {
         btnMenu.setTypeface(Typeface.DEFAULT_BOLD);
         btnMenu.setBackground(null);
         btnMenu.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnMenu.setPadding(20, 0, 8, 0);  // 左内边距 16 → 20
+        btnMenu.setPadding(20, 0, 8, 0);
         btnMenu.setOnClickListener(v -> toggleMenu());
         topBar.addView(btnMenu);
 
@@ -385,7 +385,7 @@ public class MainActivity extends Activity {
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.WRAP_CONTENT
 );
-toolBarParams.setMargins(0, dpToPx(-24), 0, 0);  // 上移 8dp
+toolBarParams.setMargins(0, dpToPx(-24), 0, 0);
 toolBar.setLayoutParams(toolBarParams);
 
         // AI切换按钮（强制固定宽高）
@@ -454,6 +454,7 @@ toolBar.setLayoutParams(toolBarParams);
         etInput.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         inputLayout.addView(etInput);
 
+        // ========== 发送按钮（左移更多：-20dp） ==========
         btnSend = new Button(this);
         btnSend.setText("发送");
         btnSend.setBackgroundColor(Color.parseColor("#007AFF"));
@@ -462,7 +463,8 @@ toolBar.setLayoutParams(toolBarParams);
                 dpToPx(54),
                 dpToPx(28)
         );
-sendParams.setMargins(dpToPx(-12), 0, 0, 0);        btnSend.setLayoutParams(sendParams);
+        sendParams.setMargins(dpToPx(-20), 0, 0, 0);  // 从 -12 改为 -20，左移更多
+        btnSend.setLayoutParams(sendParams);
         btnSend.setPadding(0, 0, 0, 0);
         btnSend.setTextSize(12);
         GradientDrawable btnShape = new GradientDrawable();
@@ -505,10 +507,10 @@ sendParams.setMargins(dpToPx(-12), 0, 0, 0);        btnSend.setLayoutParams(send
     menuPanel.setBackgroundColor(Color.WHITE);
     menuPanel.setPadding(0, 100, 0, 0);
 
-    // ----- 顶部搜索框 -----
+    // ----- 顶部搜索框（已缩小：左右从 12→8，上下从 3→1） -----
     LinearLayout searchContainer = new LinearLayout(this);
     searchContainer.setOrientation(LinearLayout.HORIZONTAL);
-    searchContainer.setPadding(12, 3, 12, 3);
+    searchContainer.setPadding(8, 1, 8, 1);  // 左右 8，上下 1
     searchContainer.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
@@ -545,7 +547,6 @@ sendParams.setMargins(dpToPx(-12), 0, 0, 0);        btnSend.setLayoutParams(send
         @Override public void afterTextChanged(android.text.Editable s) {}
     });
     searchContainer.addView(searchInput);
-
     menuPanel.addView(searchContainer);
 
     // ----- 对话历史列表（滚动）-----
