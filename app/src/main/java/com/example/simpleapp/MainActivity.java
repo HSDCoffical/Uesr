@@ -388,14 +388,14 @@ public class MainActivity extends Activity {
 
         // AI切换按钮（强制固定宽高）
         btnSwitchAI = new Button(this);
-        btnSwitchAI.setText("AI");
-        btnSwitchAI.setTextSize(9);
+        btnSwitchAI.setText("模型切换");
+        btnSwitchAI.setTextSize(11);
         btnSwitchAI.setTypeface(null, Typeface.BOLD);
         btnSwitchAI.setBackgroundColor(Color.TRANSPARENT);
         btnSwitchAI.setTextColor(Color.BLACK);
         btnSwitchAI.setPadding(0, 0, 0, 0);
         // 强制固定尺寸
-        LinearLayout.LayoutParams aiParams = new LinearLayout.LayoutParams(dpToPx(28), dpToPx(18));
+        LinearLayout.LayoutParams aiParams = new LinearLayout.LayoutParams(dpToPx(48), dpToPx(30));
         btnSwitchAI.setLayoutParams(aiParams);
         GradientDrawable glassBg1 = new GradientDrawable();
         glassBg1.setCornerRadius(dpToPx(10));
@@ -406,12 +406,12 @@ public class MainActivity extends Activity {
 
         // 语音输入按钮（强制固定宽高）
         btnVoice = new Button(this);
-        btnVoice.setText("🎤");
+        btnVoice.setText("语音输入");
         btnVoice.setTextSize(11);
         btnVoice.setBackgroundColor(Color.TRANSPARENT);
         btnVoice.setPadding(0, 0, 0, 0);
         // 强制固定尺寸
-        LinearLayout.LayoutParams voiceParams = new LinearLayout.LayoutParams(dpToPx(28), dpToPx(18));
+        LinearLayout.LayoutParams voiceParams = new LinearLayout.LayoutParams(dpToPx(48), dpToPx(30));
         btnVoice.setLayoutParams(voiceParams);
         GradientDrawable glassBg2 = new GradientDrawable();
         glassBg2.setCornerRadius(dpToPx(10));
