@@ -335,6 +335,7 @@ public class MainActivity extends Activity {
         tvStatus.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f));
         topBar.addView(tvStatus);
 
+        // 新建对话图标 "+"（右移）
         Button btnNewChat = new Button(this);
         btnNewChat.setText("+");
         btnNewChat.setTextSize(24);
@@ -348,6 +349,7 @@ public class MainActivity extends Activity {
         });
         topBar.addView(btnNewChat);
 
+        // 菜单按钮 "☰"（右移）
         Button btnMenu = new Button(this);
         btnMenu.setText("☰");
         btnMenu.setTextSize(24);
@@ -374,7 +376,7 @@ public class MainActivity extends Activity {
         scrollView.addView(chatContainer);
         main.addView(scrollView);
 
-        // ========== 按钮独立行：AI切换 + 语音输入（固定，不悬浮） ==========
+        // ========== 按钮独立行：AI切换 + 语音输入（缩小一倍） ==========
         LinearLayout toolBar = new LinearLayout(this);
         toolBar.setOrientation(LinearLayout.HORIZONTAL);
         toolBar.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
@@ -384,32 +386,38 @@ public class MainActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT
         ));
 
-        // AI切换按钮（小圆角四边形）
+        // AI切换按钮（进一步缩小）
         btnSwitchAI = new Button(this);
         btnSwitchAI.setText("AI");
-        btnSwitchAI.setTextSize(11);
+        btnSwitchAI.setTextSize(7);                      // 从 9 缩小到 7
+        btnSwitchAI.setTypeface(null, Typeface.BOLD);
         btnSwitchAI.setBackgroundColor(Color.TRANSPARENT);
         btnSwitchAI.setTextColor(Color.BLACK);
-        btnSwitchAI.setPadding(10, 4, 10, 4);
+        btnSwitchAI.setPadding(4, 1, 4, 1);              // 从 6,2 缩小到 4,1
         GradientDrawable glassBg1 = new GradientDrawable();
-        glassBg1.setCornerRadius(dpToPx(10));
+        glassBg1.setCornerRadius(dpToPx(16));
         glassBg1.setColor(Color.parseColor("#AAFFFFFF"));
         btnSwitchAI.setBackground(glassBg1);
         btnSwitchAI.setOnClickListener(v -> showModelSelector());
         toolBar.addView(btnSwitchAI);
 
-        // 语音输入按钮（小圆角四边形）
+        // 语音输入按钮（进一步缩小）
         btnVoice = new Button(this);
         btnVoice.setText("🎤");
-        btnVoice.setTextSize(14);
+        btnVoice.setTextSize(9);                         // 从 11 缩小到 9
         btnVoice.setBackgroundColor(Color.TRANSPARENT);
-        btnVoice.setPadding(10, 4, 10, 4);
+        btnVoice.setPadding(4, 1, 4, 1);                 // 从 6,2 缩小到 4,1
         GradientDrawable glassBg2 = new GradientDrawable();
-        glassBg2.setCornerRadius(dpToPx(10));
+        glassBg2.setCornerRadius(dpToPx(16));
         glassBg2.setColor(Color.parseColor("#AAFFFFFF"));
         btnVoice.setBackground(glassBg2);
         btnVoice.setOnClickListener(v -> startVoiceInput());
         toolBar.addView(btnVoice);
+
+        // 按钮之间增加 8dp 间距
+        View spacer = new View(this);
+        spacer.setLayoutParams(new LinearLayout.LayoutParams(dpToPx(8), ViewGroup.LayoutParams.MATCH_PARENT));
+        toolBar.addView(spacer, 1);
 
         main.addView(toolBar);
 
