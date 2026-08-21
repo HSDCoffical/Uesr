@@ -385,7 +385,7 @@ public class MainActivity extends Activity {
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.WRAP_CONTENT
 );
-toolBarParams.setMargins(0, dpToPx(-20), 0, 0);  // 上移 8dp
+toolBarParams.setMargins(0, dpToPx(-24), 0, 0);  // 上移 8dp
 toolBar.setLayoutParams(toolBarParams);
 
         // AI切换按钮（强制固定宽高）
@@ -447,7 +447,7 @@ toolBar.setLayoutParams(toolBarParams);
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(24, 26, 24, 26);
+        etInput.setPadding(24, 28, 24, 28);
         etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
@@ -462,7 +462,7 @@ toolBar.setLayoutParams(toolBarParams);
                 dpToPx(54),
                 dpToPx(28)
         );
-sendParams.setMargins(dpToPx(-8), 0, 0, 0);        btnSend.setLayoutParams(sendParams);
+sendParams.setMargins(dpToPx(-12), 0, 0, 0);        btnSend.setLayoutParams(sendParams);
         btnSend.setPadding(0, 0, 0, 0);
         btnSend.setTextSize(12);
         GradientDrawable btnShape = new GradientDrawable();
@@ -508,7 +508,7 @@ sendParams.setMargins(dpToPx(-8), 0, 0, 0);        btnSend.setLayoutParams(sendP
     // ----- 顶部搜索框 -----
     LinearLayout searchContainer = new LinearLayout(this);
     searchContainer.setOrientation(LinearLayout.HORIZONTAL);
-    searchContainer.setPadding(15, 8, 15, 6);
+    searchContainer.setPadding(12, 4, 12, 4);
     searchContainer.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
