@@ -447,7 +447,7 @@ toolBar.setLayoutParams(toolBarParams);
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(24, 28, 24, 28);
+        etInput.setPadding(26, 28, 26, 28);
         etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
@@ -508,7 +508,7 @@ sendParams.setMargins(dpToPx(-12), 0, 0, 0);        btnSend.setLayoutParams(send
     // ----- 顶部搜索框 -----
     LinearLayout searchContainer = new LinearLayout(this);
     searchContainer.setOrientation(LinearLayout.HORIZONTAL);
-    searchContainer.setPadding(12, 4, 12, 4);
+    searchContainer.setPadding(12, 3, 12, 3);
     searchContainer.setLayoutParams(new LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
@@ -523,7 +523,7 @@ sendParams.setMargins(dpToPx(-12), 0, 0, 0);        btnSend.setLayoutParams(send
     searchIcon.setColorFilter(Color.GRAY);
     searchIcon.setPadding(8, 8, 8, 8);
     LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
-            dpToPx(24), dpToPx(24)
+            dpToPx(20), dpToPx(20)
     );
     iconParams.gravity = Gravity.CENTER_VERTICAL;
     searchIcon.setLayoutParams(iconParams);
