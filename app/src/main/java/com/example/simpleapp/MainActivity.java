@@ -381,10 +381,12 @@ public class MainActivity extends Activity {
         toolBar.setOrientation(LinearLayout.HORIZONTAL);
         toolBar.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
         toolBar.setPadding(4, 4, 4, 4);
-        toolBar.setLayoutParams(new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-        ));
+        LinearLayout.LayoutParams toolBarParams = new LinearLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.WRAP_CONTENT
+);
+toolBarParams.setMargins(0, dpToPx(-8), 0, 0);  // 上移 8dp
+toolBar.setLayoutParams(toolBarParams);
 
         // AI切换按钮（强制固定宽高）
         btnSwitchAI = new Button(this);
@@ -445,7 +447,7 @@ public class MainActivity extends Activity {
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(16, 14, 16, 14);
+        etInput.setPadding(24, 12, 24, 12);
         etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
