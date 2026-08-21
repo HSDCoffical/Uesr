@@ -385,7 +385,7 @@ public class MainActivity extends Activity {
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.WRAP_CONTENT
 );
-toolBarParams.setMargins(0, dpToPx(-8), 0, 0);  // 上移 8dp
+toolBarParams.setMargins(0, dpToPx(-16), 0, 0);  // 上移 8dp
 toolBar.setLayoutParams(toolBarParams);
 
         // AI切换按钮（强制固定宽高）
@@ -397,7 +397,7 @@ toolBar.setLayoutParams(toolBarParams);
         btnSwitchAI.setTextColor(Color.BLACK);
         btnSwitchAI.setPadding(0, 0, 0, 0);
         // 强制固定尺寸
-        LinearLayout.LayoutParams aiParams = new LinearLayout.LayoutParams(dpToPx(48), dpToPx(30));
+        LinearLayout.LayoutParams aiParams = new LinearLayout.LayoutParams(dpToPx(65), dpToPx(35));
         btnSwitchAI.setLayoutParams(aiParams);
         GradientDrawable glassBg1 = new GradientDrawable();
         glassBg1.setCornerRadius(dpToPx(10));
@@ -413,7 +413,7 @@ toolBar.setLayoutParams(toolBarParams);
         btnVoice.setBackgroundColor(Color.TRANSPARENT);
         btnVoice.setPadding(0, 0, 0, 0);
         // 强制固定尺寸
-        LinearLayout.LayoutParams voiceParams = new LinearLayout.LayoutParams(dpToPx(48), dpToPx(30));
+        LinearLayout.LayoutParams voiceParams = new LinearLayout.LayoutParams(dpToPx(65), dpToPx(35));
         btnVoice.setLayoutParams(voiceParams);
         GradientDrawable glassBg2 = new GradientDrawable();
         glassBg2.setCornerRadius(dpToPx(10));
@@ -447,7 +447,7 @@ toolBar.setLayoutParams(toolBarParams);
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(24, 12, 24, 12);
+        etInput.setPadding(24, 18, 24, 18);
         etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
