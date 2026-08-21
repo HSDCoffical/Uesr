@@ -397,7 +397,7 @@ toolBar.setLayoutParams(toolBarParams);
         btnSwitchAI.setTextColor(Color.BLACK);
         btnSwitchAI.setPadding(0, 0, 0, 0);
         // 强制固定尺寸
-        LinearLayout.LayoutParams aiParams = new LinearLayout.LayoutParams(dpToPx(65), dpToPx(35));
+        LinearLayout.LayoutParams aiParams = new LinearLayout.LayoutParams(dpToPx(65), dpToPx(30));
         btnSwitchAI.setLayoutParams(aiParams);
         GradientDrawable glassBg1 = new GradientDrawable();
         glassBg1.setCornerRadius(dpToPx(10));
@@ -413,7 +413,7 @@ toolBar.setLayoutParams(toolBarParams);
         btnVoice.setBackgroundColor(Color.TRANSPARENT);
         btnVoice.setPadding(0, 0, 0, 0);
         // 强制固定尺寸
-        LinearLayout.LayoutParams voiceParams = new LinearLayout.LayoutParams(dpToPx(65), dpToPx(35));
+        LinearLayout.LayoutParams voiceParams = new LinearLayout.LayoutParams(dpToPx(65), dpToPx(30));
         btnVoice.setLayoutParams(voiceParams);
         GradientDrawable glassBg2 = new GradientDrawable();
         glassBg2.setCornerRadius(dpToPx(10));
@@ -447,7 +447,7 @@ toolBar.setLayoutParams(toolBarParams);
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(24, 18, 24, 18);
+        etInput.setPadding(24, 23, 24, 23);
         etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
