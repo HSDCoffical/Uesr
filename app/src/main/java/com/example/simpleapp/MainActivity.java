@@ -341,7 +341,7 @@ public class MainActivity extends Activity {
         btnNewChat.setTypeface(Typeface.DEFAULT_BOLD);
         btnNewChat.setBackground(null);
         btnNewChat.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnNewChat.setPadding(64, 0, 8, 0);
+        btnNewChat.setPadding(80, 0, 8, 0);
         btnNewChat.setOnClickListener(v -> {
             newConversation();
             closeMenuIfOpen();
@@ -354,7 +354,7 @@ public class MainActivity extends Activity {
         btnMenu.setTypeface(Typeface.DEFAULT_BOLD);
         btnMenu.setBackground(null);
         btnMenu.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
-        btnMenu.setPadding(8, 0, 8, 0);
+        btnMenu.setPadding(16, 0, 8, 0);
         btnMenu.setOnClickListener(v -> toggleMenu());
         topBar.addView(btnMenu);
 
