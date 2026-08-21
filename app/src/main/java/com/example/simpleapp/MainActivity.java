@@ -447,7 +447,7 @@ toolBar.setLayoutParams(toolBarParams);
         etInput = new EditText(this);
         etInput.setHint("输入消息...");
         etInput.setBackground(null);
-        etInput.setPadding(24, 23, 24, 23);
+        etInput.setPadding(24, 26, 24, 26);
         etInput.setTextSize(14);
         etInput.setTextColor(themeHelper.isDarkMode() ? Color.WHITE : Color.BLACK);
         etInput.setHintTextColor(themeHelper.isDarkMode() ? Color.LTGRAY : Color.GRAY);
@@ -462,7 +462,7 @@ toolBar.setLayoutParams(toolBarParams);
                 dpToPx(54),
                 dpToPx(28)
         );
-        btnSend.setLayoutParams(sendParams);
+sendParams.setMargins(dpToPx(-8), 0, 0, 0);        btnSend.setLayoutParams(sendParams);
         btnSend.setPadding(0, 0, 0, 0);
         btnSend.setTextSize(12);
         GradientDrawable btnShape = new GradientDrawable();
