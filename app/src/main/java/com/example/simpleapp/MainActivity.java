@@ -393,7 +393,7 @@ public class MainActivity extends Activity {
         btnSwitchAI.setTypeface(null, Typeface.BOLD);
         btnSwitchAI.setBackgroundColor(Color.TRANSPARENT);
         btnSwitchAI.setTextColor(Color.BLACK);
-        btnSwitchAI.setPadding(4, 1, 4, 1);              // 从 6,2 缩小到 4,1
+        btnSwitchAI.setPadding(2, 0, 2, 0);              // 从 6,2 缩小到 4,1
         GradientDrawable glassBg1 = new GradientDrawable();
         glassBg1.setCornerRadius(dpToPx(16));
         glassBg1.setColor(Color.parseColor("#AAFFFFFF"));
@@ -406,7 +406,7 @@ public class MainActivity extends Activity {
         btnVoice.setText("🎤");
         btnVoice.setTextSize(9);                         // 从 11 缩小到 9
         btnVoice.setBackgroundColor(Color.TRANSPARENT);
-        btnVoice.setPadding(4, 1, 4, 1);                 // 从 6,2 缩小到 4,1
+        btnVoice.setPadding(2, 0, 2, 0);                 // 从 6,2 缩小到 4,1
         GradientDrawable glassBg2 = new GradientDrawable();
         glassBg2.setCornerRadius(dpToPx(16));
         glassBg2.setColor(Color.parseColor("#AAFFFFFF"));
