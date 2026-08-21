@@ -385,7 +385,7 @@ public class MainActivity extends Activity {
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.WRAP_CONTENT
 );
-toolBarParams.setMargins(0, dpToPx(-16), 0, 0);  // 上移 8dp
+toolBarParams.setMargins(0, dpToPx(-20), 0, 0);  // 上移 8dp
 toolBar.setLayoutParams(toolBarParams);
 
         // AI切换按钮（强制固定宽高）
