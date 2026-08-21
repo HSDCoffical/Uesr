@@ -463,7 +463,7 @@ toolBar.setLayoutParams(toolBarParams);
                 dpToPx(54),
                 dpToPx(28)
         );
-        sendParams.setMargins(dpToPx(-12), 0, 0, 0);  // 从 -12 改为 -20，左移更多
+        sendParams.setMargins(dpToPx(-20), 0, 0, 0);  // 从 -12 改为 -20，左移更多
         btnSend.setLayoutParams(sendParams);
         btnSend.setPadding(0, 0, 0, 0);
         btnSend.setTextSize(12);
@@ -525,7 +525,7 @@ toolBar.setLayoutParams(toolBarParams);
     searchIcon.setColorFilter(Color.GRAY);
     searchIcon.setPadding(8, 8, 8, 8);
     LinearLayout.LayoutParams iconParams = new LinearLayout.LayoutParams(
-            dpToPx(20), dpToPx(20)
+            dpToPx(24), dpToPx(24)
     );
     iconParams.gravity = Gravity.CENTER_VERTICAL;
     searchIcon.setLayoutParams(iconParams);
