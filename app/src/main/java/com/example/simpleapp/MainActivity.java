@@ -432,7 +432,7 @@ toolBar.setLayoutParams(toolBarParams);
         // ========== 输入框区域（仅输入框 + 发送按钮） ==========
         LinearLayout inputLayout = new LinearLayout(this);
         inputLayout.setOrientation(LinearLayout.HORIZONTAL);
-        inputLayout.setPadding(8, 4, 8, 4);
+        inputLayout.setPadding(8, 4, 0, 4);
 
         GradientDrawable inputBg = new GradientDrawable();
         inputBg.setCornerRadius(dpToPx(32));
@@ -463,7 +463,7 @@ toolBar.setLayoutParams(toolBarParams);
                 dpToPx(54),
                 dpToPx(28)
         );
-        sendParams.setMargins(dpToPx(-20), 0, 0, 0);  // 从 -12 改为 -20，左移更多
+        sendParams.setMargins(dpToPx(-12), 0, 0, 0);  // 从 -12 改为 -20，左移更多
         btnSend.setLayoutParams(sendParams);
         btnSend.setPadding(0, 0, 0, 0);
         btnSend.setTextSize(12);
